@@ -106,6 +106,8 @@ ff(end+1) = 0.05;
 if plotlanes
     figure(1)
     plotReachAvoidSets(Goal,Road,x_r_s)
+    axis([-2 20 -1 3.5])
+    set(gcf,'Position',[300 400 1500 300])
 end
 while Goal(curr_xr)>0 && i<N
     i = i+1;
@@ -134,7 +136,8 @@ while Goal(curr_xr)>0 && i<N
     A(end+1,1:2) = [GoalderFunc(curr_xr,[1 0]) GoalderFunc(curr_xr,[0 1])] ;
     A(end,end) = -1;
     b(end+1) = 0;
-    
+    A(end+1,end) = 1;
+    b(end+1) = -0.2;
     % Constraints on bi to satisfy pi risk
     for j = 1:length(x_o)
         A(end+1,length(u_s)+j) = 1;
@@ -167,7 +170,6 @@ while Goal(curr_xr)>0 && i<N
         for io = 1:length(x_o)
             ob{io} = plot(x_o{io}(1,i),x_o{io}(2,i),'o','color','r',args{:});
         end
-        axis([-2 22 -1 3.5])
     %     figure(2)
     %     hold on;
     %     plot(i,u_r(i),'o')

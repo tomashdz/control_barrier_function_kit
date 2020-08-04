@@ -2,15 +2,15 @@ clear ;
 % clc;
 close all;
 x_r = [0 ; 0; 0];
-x_o = {[-1; 1], [3;1] ,[-15;1],[-18;1], [-10;2], [-5;2], [0;2],[7;2],}; 
-x_o = {[-1; 1], [3;1] [-5;2], [0;2],[7;2],}; 
+x_o = {[-1.5; 1], [3;1] ,[-5;1],[-15;1], [-10;2], [-4;2], [0;2],[7;2]}; 
+% x_o = {[-1; 1], [3;1] [-5;2], [0;2],[7;2],}; 
 
 t = sym('t');
 x_r_s = sym('x_r',[1,3]);
 x_o_s = sym('x_o',[1,2]);
 u_s = sym('u', [1,2]);
 
-U = [0 2 ; -pi/3 pi/3];   % v_x>=0, but v_y can be negative: more limited to better represent steering
+U = [0 2 ; -pi/6 pi/6];   % v_x>=0, but v_y can be negative: more limited to better represent steering
 T = 0.5;
 SimTime = 25;
 plotit = 1;
@@ -37,7 +37,7 @@ GoalCenter = [10 ; 3];
 r = 0.4^2*ones(length(x_o),1);   % same radius for all circles
 rG = 0.1^2;
 rLane = 0.5^2;
-gamma = 100;
+gamma = 20;
 Unsafes = cell(length(x_o),1);
 for i = 1:length(Unsafes)
     Unsafes{i} = @(x_r, x_o) (x_r(1)-x_o(1))^2+(x_r(2)-x_o(2))^2-r(i)-l;
@@ -100,19 +100,15 @@ end
 
 %% Quadratic Programs
 i = 0;
+UnsafeRadius = 2;
 curr_xr = x_r;
 x_r_traj = x_r;
 t_traj = 0;
-H = [zeros(length(u_s)+length(x_o))];  % u1, u2 , b1 to  b4 for obstacles, delta (for lyapunov)
-H(1:length(u_s), 1:length(u_s)) = eye(length(u_s));
-ff(length(u_s)+1:length(u_s)+length(x_o)) = 10^12; 
-% ff(end) = 0.1;
-ff(1) = -u1d;
-ff(2) = -max_u2d; 
+
 figure(1)
 if plotit
     figure(1)
-    axis([-2 35 -1 3.5])
+    axis([-2 20 -1 3.5])
     set(gcf,'Position',[300 400 1500 300])
     hold on;
     if plotlanes
@@ -120,32 +116,32 @@ if plotit
     end
 end
 
-
-% final pose/ acceleration instead of velocity
-while Goal(curr_xr)>0 && i<N
+fid = 0;
+% final pose/ acceleration instead of velocity/ Risk and other related
+% measures plot
+while Goal(curr_xr)>-0.1^2+l+eps && i<N
     i = i+1;
-    options =  optimset('Display','off','MaxIter', 1000);
-
-    % In order to enforce the pose to become parallel to lane we can change the
-    % refrence angle as follows
-    if Goal(curr_xr)<0.9^2
-        ff(2) = max_u2d;
+    UnsafeList = [];
+    options =  optimset('Display','off','MaxIter', 2000);
+    for j = 1:length(x_o)
+        Dists(j) = Unsafes{j}(curr_xr,  x_o{j}(:,i));
+        if Dists(j)<UnsafeRadius
+            UnsafeList = [UnsafeList ,j];
+        end
     end
-    
     % Consiedring (22) as the bound on ai and bi for risk, Let's fix ai
     ai = 1;
     A = [];
     b =[];
-   for j = 1:length(x_o)
+    H = [];
+    ff = [];
+   for j = 1:length(UnsafeList)
         % CBF Constraints
-        A(2*j-1,[1:length(u_s) length(u_s)+j]) = [multCondFun{j}(curr_xr,  x_o{j}(:,i),[1 0]) multCondFun{j}(curr_xr,  x_o{j}(:,i),[0 1]) -1]; % multiplier of u , bi
-        b(2*j-1) = -ai* CBF{j}(curr_xr,  x_o{j}(:,i))- ConstCondFun{j}(curr_xr, x_o{j}(:,i));  
+        A(2*j-1,[1:length(u_s) length(u_s)+j]) = [multCondFun{UnsafeList(j)}(curr_xr,  x_o{UnsafeList(j)}(:,i),[1 0]) multCondFun{UnsafeList(j)}(curr_xr,  x_o{UnsafeList(j)}(:,i),[0 1]) -1]; % multiplier of u , bi
+        b(2*j-1) = -ai* CBF{UnsafeList(j)}(curr_xr,  x_o{UnsafeList(j)}(:,i))- ConstCondFun{UnsafeList(j)}(curr_xr, x_o{UnsafeList(j)}(:,i));  
         % Constraints on bi to satisfy pi risk
         A(2*j,length(u_s)+j) = 1;
-        b(2*j) = min(ai, -1/T*log((1-p(j))/(1-CBF{j}(curr_xr,  x_o{j}(:,i)))));
-        if CBF{j}(curr_xr,  x_o{j}(:,i))>= 1
-            1
-        end
+        b(2*j) = min(ai, -1/T*log((1-p(UnsafeList(j)))/(1-CBF{UnsafeList(j)}(curr_xr,  x_o{UnsafeList(j)}(:,i)))));
     end
     
     % Adding the bi's
@@ -158,24 +154,45 @@ while Goal(curr_xr)>0 && i<N
     A(end+1,2) = 1; b(end+1) = U(2,2);
     A(end+1,2) = -1; b(end+1) = -U(2,1);
     
-    % Adding Goal based Lyapunov !!!!!!!!!!!!!!!!! Needs to be changed for a different example 
-%     A(end+1,1:2) = [GoalderFunc(curr_xr,[1 0]) GoalderFunc(curr_xr,[0 1])] ;
-%     A(end,end) = -1;
-%     b(end+1) = 0;
-%     
-%     for j = 1:length(x_o)
-%         A(end+1,length(u_s)+j) = 1;
-%         b = [b  min(ai, -1/T*log((1-p(j))/(1-CBF{j}(curr_xr,  x_o{j}(:,i)))))];
-%     end
+    H = [zeros(length(u_s)+length(UnsafeList))];  % u1, u2 , b1 to  b4 for obstacles, delta (for lyapunov)
+    H(1:length(u_s), 1:length(u_s)) = eye(length(u_s));
+    ff(length(u_s)+1:length(u_s)+length(UnsafeList)) = 10^4; %10^8
+    % ff(end) = 0.1;
+    ff(1) = -u1d;
+    ff(2) = -max_u2d; 
 
-    [uq,fval,exitflag,~]= quadprog(H, ff, A, b,[],[],[],[],[],options);
-    if ~(exitflag==1)
-%         if ~(exitflag==1 || exitflag==0)
-        [bmax, j] = max(uq(2:end));
-        risk = 1-(1-CBF{j}(curr_xr,  x_o{j}(:,i)))*exp(-bmax*T);
-        warning('exitflag not 1: some problem in Quadprog')        
+    % In order to enforce the pose to become parallel to lane we can change the
+    % refrence angle as follows
+    if Goal(curr_xr)<0.5^2
+        ff(2) = min(curr_xr(3),U(2,2));
     end
 
+
+    [uq,fval,exitflag,output]= quadprog(H, ff, A, b,[],[],[],[],[],options);
+    if ~(exitflag==1)
+        switch exitflag
+            case 0
+                warning('exitflag 0: Stopped cause of max iteration')
+            case -2
+                warning('NO feasible solution')
+            case -3
+                warning('exitflag -3: Unbounded')
+            otherwise
+                warning(['exitflag', num2str(exitflag) ])
+        end
+    end
+    if length(uq)>2
+        [bmax(i), j] = max(uq(3:end));
+        r = [];
+        for k = 1:length(uq)-2
+            r(k) = max(0,1-(1-CBF{UnsafeList(k)}(curr_xr,  x_o{UnsafeList(k)}(:,i)))*exp(-uq(k+2)*T));
+        end
+        risk(i) = max(r(k));
+    else 
+        risk(i) = 0;
+        bmax(i) = 0;
+    end
+    minDist(i) = min(Dists);
     curr_u = uq(1:length(u_s));
     uq_b = uq;
     u_r(:,i) = curr_u;
@@ -185,7 +202,9 @@ while Goal(curr_xr)>0 && i<N
     x_r(:,i+1) = curr_xr;
     x_r_traj = [x_r_traj nextStates'];
     t_traj = [t_traj T_traj'];
-    if plotit && rem(i,20)==1
+    
+    
+    if plotit && rem(i,15)==1
         if i>1
             set(rob,'Visible','off')
             for io = 1:length(x_o)
@@ -198,15 +217,30 @@ while Goal(curr_xr)>0 && i<N
         for io = 1:length(x_o)
             ob{io} = plot(x_o{io}(1,i),x_o{io}(2,i),'o','color','r',args{:});
         end
-        axis([-2 40 -1 3.5])
     %     figure(2)
     %     hold on;
     %     plot(i,u_r(i),'o')
+        fid = fid+1;
+        F(fid) = getframe;
         drawnow 
     end
 end
 figure(1); plot(x_r(1,:),x_r(2,:),'o','color','b',args{:})
-figure;plot(1:i, u_r)
+% writerObj = VideoWriter('test2.avi'); %Attempt to create an avi
+% writerObj.FrameRate = 10;
+% open(writerObj);
+% for t= 1:fid
+% 
+%     writeVideo(writerObj,F(t))
+% 
+% end
+% 
+% close(writerObj);
+figure(2);subplot(4,1,1);plot(0:dt:(i-1)*dt, u_r); ylabel('Input')
+figure(2);subplot(4,1,2);plot(0:dt:(i-1)*dt, risk); ylabel('$\max(\bar p_i^B)$','interpreter','latex','fontsize',14)
+subplot(4,1,3);plot(0:dt:(i-1)*dt, minDist);ylabel('$\min(h(x))$','interpreter','latex','fontsize',14)
+subplot(4,1,4); plot(1:i,bmax); xlabel('time'); ylabel('$\max(b_i)$','interpreter','latex','fontsize',14)
+
  function plotReachAvoidSets(Goal,Road,x_r_s)
              args = {'-black', 'LineWidth', 2};
 %             prefix = this.plant.statePrefix;

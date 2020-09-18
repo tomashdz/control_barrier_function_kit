@@ -1,11 +1,13 @@
 # Risk-based-Stochastic-Control-Barrier-Functions
 
-PM_stochastic solves a reach avoid problem by bounding the risk to a desired value in a high way scenario for a point mass model of
-a vehicle in presence of other agents with stochastic velocities. Reachability is enforces by Lyapunov functions.
+The following functions solve a reach avoid problem by bounding the risk to a desired value in a high way scenario and in presence of other agents with stochastic velocities:
 
-PM_stochastic_Uni_PF solves a reach avoid problem by bounding the risk to a desired value in a high way scenario for a unicycle model of
-a vehicle in presence of other agents with stochastic velocities. Reachability is enforces with the help of potential fields.
+PM_stochastic: Considers a point mass model fro the ego vehicle. Reachability is enforces by Lyapunov functions.
+
+Uni_stochastic_Uni_PF: Considers a unicycle model for the vehicle. Reachability is enforces with the help of potential fields.
 
 traffic: Scenario with more car handled by potential fields
 
 traffic_lyap: Scenario with more car handled by Lyapunov function
+
+traffic_lyap_minvchange**: This is the code used in the paper "Risk-bounded Control using Stochastic Barrier Functions". It considers denser traffic. Uses Bicycle mode and Lyapunov functions for reachability. Furthermore, the quadratic cost includes a terms that aims to reduce fast changes in the control inputs from iteration to iteration.

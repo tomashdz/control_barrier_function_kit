@@ -15,7 +15,7 @@ T = 0.5;
 SimTime = 25;
 plotit = 1;
 plotlanes = 1;
-% Point mass model
+% Bicycle model
 l = 0.01;
 Real_x_r = @(x_r) x_r-l*[cos(x_r(3)); sin(x_r(3)); 0];
 f = @(x)  [0 ;0; 0]; 
@@ -119,6 +119,7 @@ uq = [];
 fid = 0;
 % final pose/ acceleration instead of velocity/ Risk and other related
 % measures plot
+tic
 while Goal(curr_xr)>-0.1^2+l+eps && i<N
     i = i+1;
     UnsafeList = [];
@@ -238,6 +239,7 @@ while Goal(curr_xr)>-0.1^2+l+eps && i<N
         drawnow 
     end
 end
+toc
 figure(1); plot(x_r(1,:),x_r(2,:),'o','color','b',args{:})
 % writerObj = VideoWriter('test2.avi'); %Attempt to create an avi
 % writerObj.FrameRate = 10;

@@ -15,7 +15,7 @@ T = 0.5;
 SimTime = 25;
 plotit = 1;
 plotlanes = 1;
-% Point mass model
+% Unicycle model
 l = 0.01;
 Real_x_r = @(x_r) x_r-l*[cos(x_r(3)); sin(x_r(3)); 0];
 f = @(x)  [0 ;0; 0]; 

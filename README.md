@@ -11,3 +11,5 @@ traffic: Scenario with more car handled by potential fields
 traffic_lyap: Scenario with more car handled by Lyapunov function
 
 traffic_lyap_minvchange**: This is the code used in the paper "Risk-bounded Control using Stochastic Barrier Functions". It considers denser traffic. Uses Bicycle mode and Lyapunov functions for reachability. Furthermore, the quadratic cost includes a terms that aims to reduce fast changes in the control inputs from iteration to iteration.
+
+stochastic risk CBFs (Python) includes the python version of the code in "traffic_lyap_minvchange".

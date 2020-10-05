@@ -1,15 +1,8 @@
 import numpy as np
-#import sympy as sym
 from scipy.integrate import odeint
 from sympy import symbols, Matrix, sin, cos, lambdify, exp, sqrt, log
-#from sympy.physics.quantum import TensorProduct
-#from sympy.parsing.sympy_parser import (parse_expr, standard_transformations, implicit_multiplication)
-#from sympy.abc import x,y,z,a,b
-#from math import sin,cos
-#from autograd import grad
 import matplotlib.pyplot as plt  
 import cvxopt as cvxopt
-#from cvxopt import matrix, solvers
 
 
 def cvxopt_solve_qp(P, q, G=None, h=None, A=None, b=None):
@@ -50,12 +43,8 @@ gamma = 5
 #Dynamic & Stochastic systems
 f = Matrix([0,0,0])
 g = Matrix([[cos(x_r_s[2]), -l*sin(x_r_s[2])], [sin(x_r_s[2]), l*cos(x_r_s[2])], [0, 1]])
-#f_r = f+np.matmul(g, u_s)
 f_r = f+g*u_s
 
-# f_fun = lambdify(x_r_s , f)
-# g_fun = lambdify(x_r_s, g)
-# f_r_fun = lambdify([t,x_r_s,u_s], f_r)
 Real_x_r = lambdify([x_r_s], x_r_s-Matrix([l*cos(x_r_s[2]), l*sin(x_r_s[2]), 0]))
 
 f_o = Matrix([1.5,0])
@@ -63,9 +52,6 @@ g_o = Matrix([0.2, 0])
 
 f_o_fun = lambdify([x_o_s], f_o)
 g_o_fun = lambdify([x_o_s], g_o)
-
-# g = lambda x: np.matrix([[np.cos(x[2]), -l*np.sin(x[2])], [np.sin(x[2]), l*np.cos(x[2])], [0, 1]]);
-# f_r = lambda t,x,u: f(x)+np.matmul(g(x), u);
 
 # Plotting options 
 plotit = 1
@@ -114,10 +100,6 @@ for j in range(len(x_o)):
     for i in range(N-1):
         x_o_traj[i+1,:,j] = x_o_traj[i,:,j] + np.squeeze(f_o_fun(x_o_traj[i,:,j])*dt + g_o_fun(x_o_traj[i,:,j])*dW[j,i]) 
         
-#fig = plt.figure()
-#plt.hold()
-#plt.plot(np.arange(N),x_o_traj[:,0,:],color ="green")
-#plt.show()
 
 
 #QPs:

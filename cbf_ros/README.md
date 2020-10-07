@@ -45,3 +45,9 @@ source devel/setup.sh
 ```
 
 ### launch
+
+You can see HSR and turtlebot3 is enabled in Gazebo.
+
+```bash
+roslaunch cbf_ros demo.launch
+```

@@ -4,7 +4,12 @@
 
 You need install  
 ROS: http://wiki.ros.org/melodic/Installation/Ubuntu  
-TMC HSR simlator: https://docs.hsr.io/hsrb_user_manual_en/howto/pc_install.html
+TMC HSR simlator: https://docs.hsr.io/hsrb_user_manual_en/howto/pc_install.html  
+turtlebot3: If you need agent.
+
+```bash
+ sudo apt install ros-melodic-turtlebot3
+```
 
 ## Setup
 
@@ -31,3 +36,10 @@ catkin_make
 ```
 
 ## Usage
+
+You can run follwoing command when you start to use this workspace every time.
+
+```bash
+cd CBF_ws/
+source devel/setup.sh  
+```

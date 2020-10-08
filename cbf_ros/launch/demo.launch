@@ -7,6 +7,10 @@
 		<arg name="paused" value="false" />
 	</include>
 
+	<!-- Launch STL monitor (output console) -->
+	<node name="cbf_controller" pkg="cbf_ros" type="cbf_controller.py" output="screen">
+	</node>
+
 	<!-- spawn agent -->
 	<include file="$(find cbf_ros)/launch/spawn_turtlebot3.launch">
     </include>

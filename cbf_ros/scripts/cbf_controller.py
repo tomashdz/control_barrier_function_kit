@@ -26,9 +26,13 @@ class CBF_CONTROLLER(object):
 
 
         def controller_loop_callback(self, event):
+                # this controller loop call back.
+
+                # just example printf code.
                 now = rospy.get_rostime()
                 rospy.loginfo("Current time %i %i", now.secs, now.nsecs)
 
+                # making vw data and publish it.
                 vel_msg = Twist()
                 vel_msg.linear.x  = 0.3 #[m/sec]
                 vel_msg.angular.z = 0.0 #[rad/sec]
@@ -43,7 +47,7 @@ if __name__ == '__main__':
         try:
 	        rospy.init_node('cbf_controller')
                 cbf_controller = CBF_CONTROLLER()
-                control_priod = 0.1 #[sec]
+                control_priod = 0.1 #[sec] we can change controll priod with this parameter.
                 rospy.Timer(rospy.Duration(control_priod), cbf_controller.controller_loop_callback)
                 rospy.spin()
 

@@ -7,7 +7,7 @@
 		<arg name="paused" value="false" />
 	</include>
 
-	<!-- Launch STL monitor (output console) -->
+	<!-- Launch cbf controller monitor (output console) -->
 	<node name="cbf_controller" pkg="cbf_ros" type="cbf_controller.py" output="screen">
 	</node>
 

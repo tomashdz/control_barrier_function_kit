@@ -24,7 +24,7 @@ catkin_init_workspace
 clone this repo in /src directory.
 
 ```bash
-git clone https://github.com/syaghoub/Risk-based-Stochastic-Control-Barrier-Functions-.git
+git clone --branch ROSpkg https://github.com/syaghoub/Risk-based-Stochastic-Control-Barrier-Functions-.git 
 ```
 
 CBF_ROS directory in the repo. is actual ROS pkg.
@@ -42,6 +42,12 @@ You can run follwoing command when you start to use this workspace every time.
 ```bash
 cd CBF_ws/
 source devel/setup.sh  
+```
+
+Then start roscore.
+
+```bash
+roscore  
 ```
 
 ### launch

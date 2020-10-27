@@ -63,3 +63,13 @@ Tjanction scenario launch.
 ```bash
 roslaunch roslaunch cbf_ros Tjanction.launch
 ```
+
+### velocity limiter removing
+
+You can load parameter
+
+```bash
+roscd cbf_ros
+cd config
+rosparam load limiter_removal.yml
+```

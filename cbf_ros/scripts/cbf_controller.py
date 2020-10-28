@@ -44,22 +44,20 @@ class CBF_CONTROLLER(object):
                         rospy.loginfo('Current time %i %i', now.secs, now.nsecs)
 
                         # true odom
-                        tPose = self.odometry.pose.pose
-                        rospy.loginfo('tOdometry \n %s', tPose)
+                        tTwist = self.odometry.twist.twist
+                        rospy.loginfo('tOdometry \n %s', tTwist)
 
                 # get human model state from Gazebo
                 model_actor1 = GetModelStateRequest()
                 model_actor1.model_name = 'actor1'
                 actor1 = self.get_model_srv(model_actor1)
                 if DEBUG:
-                        rospy.loginfo(actor1)
                         rospy.loginfo('actor1 pose \n %s', actor1.pose)
                 
                 model_actor2 = GetModelStateRequest()
                 model_actor2.model_name = 'actor2'
                 actor2 = self.get_model_srv(model_actor2)
                 if DEBUG:
-                        rospy.loginfo(actor2)
                         rospy.loginfo('actor2 pose \n %s', actor2.pose)
 
                 # making vw data and publish it.

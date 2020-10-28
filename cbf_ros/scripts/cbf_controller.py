@@ -11,12 +11,28 @@ import argparse
 
 # ROS msg
 from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Vector3
 from nav_msgs.msg import Odometry
 from gazebo_msgs.msg import ModelState 
 from gazebo_msgs.srv import GetModelState, GetModelStateRequest
 
+# ROS others
+import tf
+
 DEBUG = True
 
+def orientation2angular(orientation):
+        quaternion = (  orientation.x,
+                        orientation.y,
+                        orientation.z,
+                        orientation.w)
+        euler = tf.transformations.euler_from_quaternion(quaternion)
+        angular = Vector3(
+                euler[0],
+                euler[1],
+                euler[2]
+        )
+        return angular
 
 class CBF_CONTROLLER(object):
 	def __init__(self):
@@ -51,14 +67,16 @@ class CBF_CONTROLLER(object):
                 model_actor1 = GetModelStateRequest()
                 model_actor1.model_name = 'actor1'
                 actor1 = self.get_model_srv(model_actor1)
+                angular1 = orientation2angular(actor1.pose.orientation)
                 if DEBUG:
-                        rospy.loginfo('actor1 pose \n %s', actor1.pose)
+                        rospy.loginfo('actor1\nposition:\n%s\nangular:\n%s\n', actor1.pose.position, angular1)
                 
                 model_actor2 = GetModelStateRequest()
                 model_actor2.model_name = 'actor2'
                 actor2 = self.get_model_srv(model_actor2)
+                angular2 = orientation2angular(actor2.pose.orientation)
                 if DEBUG:
-                        rospy.loginfo('actor2 pose \n %s', actor2.pose)
+                        rospy.loginfo('actor2\nposition:\n%s\nangular:\n%s\n', actor2.pose.position, angular2)
 
                 # making vw data and publish it.
                 vel_msg = Twist()

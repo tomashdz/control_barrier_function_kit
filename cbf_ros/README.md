@@ -58,10 +58,10 @@ You can see HSR and turtlebot3 is enabled in Gazebo.
 roslaunch cbf_ros demo.launch
 ```
 
-Tjanction scenario launch.
+T junction scenario launch.
 
 ```bash
-roslaunch roslaunch cbf_ros Tjanction.launch
+roslaunch roslaunch cbf_ros Tjunction.launch
 ```
 
 ### velocity limiter removing

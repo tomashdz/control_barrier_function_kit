@@ -69,14 +69,14 @@ class CBF_CONTROLLER(object):
                 actor1 = self.get_model_srv(model_actor1)
                 angular1 = orientation2angular(actor1.pose.orientation)
                 if DEBUG:
-                        rospy.loginfo('actor1\nposition:\n%s\nangular:\n%s\n', actor1.pose.position, angular1)
+                        rospy.loginfo('actor1\nposition:\n%s\nangular:\n%s', actor1.pose.position, angular1)
                 
                 model_actor2 = GetModelStateRequest()
                 model_actor2.model_name = 'actor2'
                 actor2 = self.get_model_srv(model_actor2)
                 angular2 = orientation2angular(actor2.pose.orientation)
                 if DEBUG:
-                        rospy.loginfo('actor2\nposition:\n%s\nangular:\n%s\n', actor2.pose.position, angular2)
+                        rospy.loginfo('actor2\nposition:\n%s\nangular:\n%s', actor2.pose.position, angular2)
 
                 # making vw data and publish it.
                 vel_msg = Twist()

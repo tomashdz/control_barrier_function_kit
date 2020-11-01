@@ -14,6 +14,7 @@
 import rospy
 import sys
 import argparse
+import re
 
 # ROS msg
 from geometry_msgs.msg import Twist
@@ -21,7 +22,7 @@ from geometry_msgs.msg import PoseStamped
 from geometry_msgs.msg import Vector3
 from nav_msgs.msg import Odometry
 from gazebo_msgs.msg import ModelState 
-from gazebo_msgs.srv import GetModelState, GetModelStateRequest
+from gazebo_msgs.srv import GetWorldProperties, GetModelState, GetModelStateRequest
 
 # ROS others
 import tf
@@ -48,6 +49,7 @@ class CBF_CONTROLLER(object):
 
                 # subscriber for Gazebo info.
                 rospy.wait_for_service ('/gazebo/get_model_state')
+                self.get_model_pro = rospy.ServiceProxy('/gazebo/get_world_properties', GetWorldProperties)
                 self.get_model_srv = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
                 self.tOdometry_subscriber = rospy.Subscriber('/hsrb/odom_ground_truth', Odometry, self.tOdometry_callback, queue_size=10)
                 self.tOdometry = Odometry()
@@ -97,25 +99,24 @@ class CBF_CONTROLLER(object):
                 # covert todometry 
 
                 # get human model state from Gazebo
-                model_actor1 = GetModelStateRequest()
-                model_actor1.model_name = 'actor1'
-                actor1 = self.get_model_srv(model_actor1) # the pose date is based on /map
-                actor1base_footprint_pose = self.gazebo_pos_transformPose('base_footprint', actor1) # trasfer /map->/base_footprint
-                angular1 = orientation2angular(actor1base_footprint_pose.pose.orientation)      # transfer orientaton(quaternion)->agular(euler)
-                if DEBUG:
-                        rospy.loginfo('actor1 in base_footprint\nposition:\n%s\nangular:\n%s', actor1base_footprint_pose.pose.position, angular1)
+                model_properties = self.get_model_pro()
+                actors = []
+                for model_name in model_properties.model_names:
+                        if re.search('actor*', model_name):  # if the model name is actor*, it will catch them.
+                                actors.append(model_name) 
 
-                model_actor2 = GetModelStateRequest()
-                model_actor2.model_name = 'actor2'
-                actor2 = self.get_model_srv(model_actor2) # the pose date is based on /map
-                actor2base_footprint_pose = self.gazebo_pos_transformPose('base_footprint', actor2) # trasfer /map->/base_footprint
-                angular2 = orientation2angular(actor2base_footprint_pose.pose.orientation)      # transfer orientaton(quaternion)->agular(euler)
-                if DEBUG:
-                        rospy.loginfo('actor2 in base_footprint\nposition:\n%s\nangular:\n%s', actor2base_footprint_pose.pose.position, angular2)
+                for actor in actors:
+                        model_actor = GetModelStateRequest()
+                        model_actor.model_name = actor
+                        model_actor = self.get_model_srv(model_actor) # the pose date is based on /map
+                        actor_base_footprint_pose = self.gazebo_pos_transformPose('base_footprint', model_actor) # trasfer /map->/base_footprint
+                        angular = orientation2angular(actor_base_footprint_pose.pose.orientation)      # transfer orientaton(quaternion)->agular(euler)
+                        if DEBUG:
+                                rospy.loginfo('%s in base_footprint\nposition:\n%s\nangular:\n%s', actor, actor_base_footprint_pose.pose.position, angular)
 
                 # making vw data and publish it.
                 vel_msg = Twist()
-                vel_msg.linear.x  = 0.3 #[m/sec]
+                vel_msg.linear.x  = 0.0 #[m/sec]
                 vel_msg.angular.z = 0.0 #[rad/sec]
                 self.vw_publisher.publish(vel_msg)
 

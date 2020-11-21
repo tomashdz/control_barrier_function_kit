@@ -1,0 +1,14 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations":[
+        {
+            "name": "ROS: Launch",
+            "type": "ros",
+            "request": "launch",
+            "target": "/mnt/data/repos/CBF_ws/src/Risk-based-Stochastic-Control-Barrier-Functions-/cbf_ros/launch/debug.launch"
+        }
+    ]
+}

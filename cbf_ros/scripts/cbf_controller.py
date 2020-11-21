@@ -143,6 +143,9 @@ class CBF_CONTROLLER(object):
                 self.robot = robot
                 self.flag = 0
                 
+                # temp for break
+                self.count = 0
+
         def __del__(self):
                 pass
 
@@ -212,6 +215,10 @@ class CBF_CONTROLLER(object):
                 self.trajs.commands.append(u)
                                
 
+                self.count = self.count + 1
+                if self.count > 50:
+                        rospy.loginfo('reach counter!!')
+                        rospy.signal_shutdown('reach counter')
 
 if __name__ == '__main__':
         ## Parameters  
@@ -256,3 +263,5 @@ if __name__ == '__main__':
 
         except rospy.ROSInterruptException:
                 pass
+
+        print('You can put data save here')

@@ -59,6 +59,9 @@ class CBF_CONTROLLER(object):
                 # listener of tf.
                 self.tfListener = tf.TransformListener()
 
+                # temp for break
+                self.count = 0
+
         def __del__(self):
                 pass
 
@@ -120,6 +123,10 @@ class CBF_CONTROLLER(object):
                 vel_msg.angular.z = 0.0 #[rad/sec]
                 self.vw_publisher.publish(vel_msg)
 
+                self.count = self.count + 1
+                if self.count > 50:
+                        rospy.loginfo('reach counter!!')
+                        rospy.signal_shutdown('reach counter')
 
 if __name__ == '__main__':
         # Process arguments
@@ -135,3 +142,5 @@ if __name__ == '__main__':
 
         except rospy.ROSInterruptException:
                 pass
+
+        print('You can put data save here')

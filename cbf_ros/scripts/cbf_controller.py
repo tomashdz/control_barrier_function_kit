@@ -115,6 +115,7 @@ class CBF_CONTROLLER(object):
                         actor_base_footprint_pose = self.gazebo_pos_transformPose('base_footprint', model_actor) # trasfer /map->/base_footprint
                         angular = orientation2angular(actor_base_footprint_pose.pose.orientation)      # transfer orientaton(quaternion)->agular(euler)
                         if DEBUG:
+                                rospy.loginfo('%s in timestamp:\n%s', actor, model_actor.header.stamp) # time stamp is here.
                                 rospy.loginfo('%s in base_footprint\nposition:\n%s\nangular:\n%s', actor, actor_base_footprint_pose.pose.position, angular)
 
                 # making vw data and publish it.

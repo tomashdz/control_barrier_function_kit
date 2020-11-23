@@ -194,6 +194,7 @@ class CBF_CONTROLLER(object):
                         p = actor_base_footprint_pose.pose.position
                         actors_data.append([p.x,p.y, angular.z])
                         if DEBUG:
+                                rospy.loginfo('%s in timestamp:\n%s', actor, model_actor.header.stamp) # time stamp is here.
                                 rospy.loginfo('%s in base_footprint\nposition:\n%s\nangular:\n%s', actor, actor_base_footprint_pose.pose.position, angular)
                 self.trajs.actors.append(actors_data)
 

@@ -40,6 +40,18 @@ def orientation2angular(orientation):
         )
         return angular
 
+def cvxopt_solve_qp(P, q, G=None, h=None, A=None, b=None):
+    P = .5 * (P + P.T)  # make sure P is symmetric
+    args = [cvxopt.matrix(P), cvxopt.matrix(q)]
+    if G is not None:
+        args.extend([cvxopt.matrix(G), cvxopt.matrix(h)])
+        if A is not None:
+            args.extend([cvxopt.matrix(A), cvxopt.matrix(b)])
+    sol = cvxopt.solvers.qp(*args)
+    if 'optimal' not in sol['status']:
+        return None
+    return np.array(sol['x']).reshape((P.shape[1],))
+
 class robot(object):
         def __init__(self,l):
                #Symbolic Variables
@@ -130,9 +142,9 @@ class CBF_CONTROLLER(object):
                 self.tOdometry = Odometry()
                 self.odometry_subscriber = rospy.Subscriber('/global_pose', PoseStamped, self.odometry_callback, queue_size=10)
                 self.poseStamped = PoseStamped()
-                self.missionInfo = missionCompute(mission)
                 # listener of tf.
                 self.tfListener = tf.TransformListener()
+
 
                 trajs = type('', (), {})()
                 trajs.hsr = []
@@ -141,8 +153,12 @@ class CBF_CONTROLLER(object):
                 trajs.time = []
                 self.trajs = trajs
                 self.robot = robot
+                self.GoalInfo = GoalInfo
+                self.UnsafeInfo = UnsafeInfo
+                self.MapInfo = MapInfo
                 self.flag = 0
-                
+                self.count = 0 # num of times control_callback is called
+
         def __del__(self):
                 pass
 
@@ -168,8 +184,7 @@ class CBF_CONTROLLER(object):
 
         def controller_loop_callback(self, event):
                 # this controller loop call back.
-                # ind = len(self.trajs.time)+1
-
+                self.count += 1
                 now = rospy.get_rostime()
                 # self.trajs.time.append(now)
                 if DEBUG:
@@ -191,6 +206,7 @@ class CBF_CONTROLLER(object):
                         p = actor_base_footprint_pose.pose.position
                         actors_data.append([p.x,p.y, angular.z])
                         if DEBUG:
+                                rospy.loginfo('%s in timestamp:\n%s', actor, model_actor.header.stamp) # time stamp is here.
                                 rospy.loginfo('%s in base_footprint\nposition:\n%s\nangular:\n%s', actor, actor_base_footprint_pose.pose.position, angular)
                 self.trajs.actors.append(actors_data)
 
@@ -199,19 +215,83 @@ class CBF_CONTROLLER(object):
                 model_hsr = self.odometry
                 p = model_hsr.pose.pose.position
                 angular = orientation2angular(model_hsr.pose.pose.orientation)      # transfer orientaton(quaternion)->agular(euler)
-                self.trajs.hsr.append([p.x,p.y,angular.z])
+                x_r = [p.x,p.y,angular.z]
+                self.trajs.hsr.append(x_r)
 
                 # making vw data and publish it.
                 vel_msg = Twist()
                 # Compute controller
-                # u = cbf_controller_compute(x,y)
-                u = [0.1,0]
+                u = self.cbf_controller_compute()
                 vel_msg.linear.x  = u[0]
                 vel_msg.angular.z = u[1]
                 self.vw_publisher.publish(vel_msg)
                 self.trajs.commands.append(u)
                                
 
+                if self.count > 500:
+                        rospy.loginfo('reach counter!!')
+                        rospy.signal_shutdown('reach counter')
+                
+                
+        def cbf_controller_compute(self):
+                x_r = np.array(self.trajs.hsr[len(self.trajs.hsr)-1])
+                x_o = np.array(self.trajs.actors[len(self.trajs.actors)-1])
+                u_s = self.robot.u_s
+                Unsafe = self.UnsafeInfo
+                Goal = self.GoalInfo
+                UnsafeList = []
+                Dists = np.zeros((len(x_o)))
+                for j  in range(len(x_o)):
+                        Dists[j] = Unsafe.set(x_r,  x_o[j][0:2])
+                        if Dists[j]<UnsafeInclude:
+                                UnsafeList.append(j)
+                ai = 1
+                A = np.zeros((2*len(UnsafeList)+2*len(u_s)+2,len(u_s)+len(UnsafeList)+1))
+                b =np.zeros((2*len(u_s)+2*len(UnsafeList)+2))
+                for j in range(len(UnsafeList)):
+                        # CBF Constraints        
+                        A[2*j,np.append(np.arange(len(u_s)),[len(u_s)+j])] = [Unsafe.multCond(x_r,  x_o[UnsafeList[j]][0:2],[1, 0]), Unsafe.multCond(x_r,x_o[UnsafeList[j]][0:2],[0, 1]), -1] # multiplier of u , bi
+                        b[2*j] = -ai* Unsafe.CBF(x_r, x_o[UnsafeList[j]][0:2])- Unsafe.ConstCond(x_r,  x_o[UnsafeList[j]][0:2])  
+                        # Constraints on bi to satisfy pi risk
+                        A[2*j+1,len(u_s)+j] = 1
+                        b[2*j+1] = min(ai, -1/T*log((1-risk))/(1-Unsafe.CBF(x_r, x_o[UnsafeList[j]][0:2])))
+                
+                # Adding U constraint
+                A[2*len(UnsafeList),0] = 1; b[2*len(UnsafeList)] = U[0,1]
+                A[2*len(UnsafeList)+1,0] = -1;  b[2*len(UnsafeList)+1] = -U[0,0]
+                A[2*len(UnsafeList)+2,1] = 1; b[2*len(UnsafeList)+2] = U[1,1]
+                A[2*len(UnsafeList)+3,1] = -1; b[2*len(UnsafeList)+3] = -U[1,0]
+                
+                # Adding Goal based Lyapunov !!!!!!!!!!!!!!!!! Needs to be changed for a different example 
+                A[2*len(UnsafeList)+2*len(u_s),0:2] = [Goal.Lyap(x_r,[1,0]), Goal.Lyap(x_r,[0, 1])]
+                A[2*len(UnsafeList)+2*len(u_s),-1] = -1
+                b[2*len(UnsafeList)+2*len(u_s)] = 0
+                A[2*len(UnsafeList)+2*len(u_s)+1,-1] = 1
+                b[2*len(UnsafeList)+2*len(u_s)+1] = np.finfo(float).eps
+
+                H = np.zeros((len(u_s)+len(UnsafeList)+1,len(u_s)+len(UnsafeList)+1))  # u1, u2 , b1 to  b4 for obstacles, delta (for lyapunov)
+                H[0,0] = 10
+                H[1,1] = 0.5
+
+                ff = np.zeros((len(u_s)+len(UnsafeList)+1,1))
+                ff[len(u_s):len(u_s)+len(UnsafeList)] = 100
+                if self.count<-1:    # Needs correction
+                        if uq[0]>u1d:
+                                ui = max(u1d,uq[0]-0.1)
+                        else:
+                                ui = min(u1d,uq[0]+0.1)
+                else:
+                        ui = u1d
+
+                ff[0] = -10*ui
+                ff[1] = 0.5*0.1*x_r[2]
+                ff[-1] = 1
+                uq = cvxopt_solve_qp(H, ff, A, b)
+                if uq is None:
+                        uq = [0,0]
+                        rospy.loginfo('infeasible QP')
+
+                return uq
 
 if __name__ == '__main__':
         ## Parameters  
@@ -219,7 +299,8 @@ if __name__ == '__main__':
         GoalCenter = np.array([0, 5])
         rGoal = np.power(0.1,2)
         # Unsafe 
-        UnsafeRadius = 0.5    #radius of unsafe sets/distance from obstacles
+        UnsafeInclude = 5    # consider obstacle if in radius
+        UnsafeRadius = .5    #radius of unsafe sets/distance from obstacles
         # Enviroment Bounds
         env_bounds = type('', (), {})()
         env_bounds.y_min = -1.7
@@ -228,10 +309,11 @@ if __name__ == '__main__':
         env_bounds.x_min = -1.6
 
         l = 0.01   #bicycle model approximation parameter
-        U = np.array([[0,2],[-np.pi/6,np.pi/6]])
+        U = np.array([[-0.33,0.33],[-0.3,0.3]])
         T = 1  #Lookahead horizon
-        p = 0.1    #max risk desired        
+        risk = 0.1    #max risk desired        
         gamma = 5       #CBF coefficient
+        u1d = 0  #desired input to save energy!
         # Plotting options 
         plotit = 1
         plotlanes = 1
@@ -256,3 +338,5 @@ if __name__ == '__main__':
 
         except rospy.ROSInterruptException:
                 pass
+
+        print('You can put data save here')

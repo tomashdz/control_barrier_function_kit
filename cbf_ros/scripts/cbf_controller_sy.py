@@ -120,7 +120,10 @@ class robot(object):
                 if hasattr(env_bounds,'y_max'):
                         Uset = (-self.x_r_s[1]+env_bounds.y_max)
                         MapInfo.set.append(lambdify([self.x_r_s], Uset))
-                        MapInfo.setDer.append(lambdify([self.x_r_s,self.u_s] , Uset.diff(self.x_r_s).T*self.f_r))                        
+                        MapInfo.setDer.append(lambdify([self.x_r_s,self.u_s] , Uset.diff(self.x_r_s).T*self.f_r))
+                if hasattr(env_bounds,'f'):
+                        pass #To be filled later
+
                 return MapInfo
                 
 
@@ -131,7 +134,7 @@ class robot(object):
 
 
 class CBF_CONTROLLER(object):
-	def __init__(self,robot,GoalInfo,UnsafeInfo):
+	def __init__(self,robot,GoalInfo,UnsafeInfo,MapInfo):
                 # publisher to send vw order to HSR
                 self.vw_publisher = rospy.Publisher('/hsrb/command_velocity', Twist, queue_size=10)
                 # subscriber for Gazebo info.
@@ -228,7 +231,7 @@ class CBF_CONTROLLER(object):
                 self.trajs.commands.append(u)
                                
 
-                if self.count > 500:
+                if self.count > 100:
                         rospy.loginfo('reach counter!!')
                         rospy.signal_shutdown('reach counter')
                 
@@ -239,6 +242,7 @@ class CBF_CONTROLLER(object):
                 u_s = self.robot.u_s
                 Unsafe = self.UnsafeInfo
                 Goal = self.GoalInfo
+                Map = self.MapInfo
                 UnsafeList = []
                 Dists = np.zeros((len(x_o)))
                 for j  in range(len(x_o)):
@@ -246,8 +250,12 @@ class CBF_CONTROLLER(object):
                         if Dists[j]<UnsafeInclude:
                                 UnsafeList.append(j)
                 ai = 1
-                A = np.zeros((2*len(UnsafeList)+2*len(u_s)+2,len(u_s)+len(UnsafeList)+1))
-                b =np.zeros((2*len(u_s)+2*len(UnsafeList)+2))
+                #Ax<=b, x = [v, w , b1, b2,..., bn, b'1, b'2,b'm, delta ]  
+                # where b is constant in Eq (14) of paper "Risk-bounded  Control  using  Stochastic  Barrier  Functions"
+                #b' is the slack variable for map constraints 
+                # delta is for lyapunov function
+                A = np.zeros((2*len(UnsafeList)+2*len(u_s)+len(MapInfo.set)+2,len(u_s)+len(UnsafeList)+len(MapInfo.set)+1))
+                b =np.zeros((2*len(u_s)+2*len(UnsafeList)+len(MapInfo.set)+2))
                 for j in range(len(UnsafeList)):
                         # CBF Constraints        
                         A[2*j,np.append(np.arange(len(u_s)),[len(u_s)+j])] = [Unsafe.multCond(x_r,  x_o[UnsafeList[j]][0:2],[1, 0]), Unsafe.multCond(x_r,x_o[UnsafeList[j]][0:2],[0, 1]), -1] # multiplier of u , bi
@@ -262,19 +270,26 @@ class CBF_CONTROLLER(object):
                 A[2*len(UnsafeList)+2,1] = 1; b[2*len(UnsafeList)+2] = U[1,1]
                 A[2*len(UnsafeList)+3,1] = -1; b[2*len(UnsafeList)+3] = -U[1,0]
                 
-                # Adding Goal based Lyapunov !!!!!!!!!!!!!!!!! Needs to be changed for a different example 
-                A[2*len(UnsafeList)+2*len(u_s),0:2] = [Goal.Lyap(x_r,[1,0]), Goal.Lyap(x_r,[0, 1])]
-                A[2*len(UnsafeList)+2*len(u_s),-1] = -1
-                b[2*len(UnsafeList)+2*len(u_s)] = 0
-                A[2*len(UnsafeList)+2*len(u_s)+1,-1] = 1
-                b[2*len(UnsafeList)+2*len(u_s)+1] = np.finfo(float).eps
+                # Adding map constraints
+                for j in range(len(MapInfo.set)):
+                        A[2*len(UnsafeList)+2*len(u_s)+j,np.append(np.arange(len(u_s)),[len(u_s)+len(UnsafeList)+j])] = [MapInfo.setDer[j](x_r,[1, 0]), MapInfo.setDer[j](x_r,[0, 1]), -1]
+                        b[2*len(UnsafeList)+2*len(u_s)+j] = 0
 
-                H = np.zeros((len(u_s)+len(UnsafeList)+1,len(u_s)+len(UnsafeList)+1))  # u1, u2 , b1 to  b4 for obstacles, delta (for lyapunov)
+                # Adding Goal based Lyapunov !!!!!!!!!!!!!!!!! Needs to be changed for a different example 
+                A[2*len(UnsafeList)+2*len(u_s)+len(MapInfo.set),0:2] = [Goal.Lyap(x_r,[1,0]), Goal.Lyap(x_r,[0, 1])]
+                A[2*len(UnsafeList)+2*len(u_s)+len(MapInfo.set),-1] = -1
+                b[2*len(UnsafeList)+2*len(u_s)+len(MapInfo.set)] = 0
+                A[2*len(UnsafeList)+2*len(u_s)+len(MapInfo.set)+1,-1] = 1
+                b[2*len(UnsafeList)+2*len(u_s)+len(MapInfo.set)+1] = np.finfo(float).eps
+                
+                H = np.zeros((len(u_s)+len(UnsafeList)+len(MapInfo.set)+1,len(u_s)+len(UnsafeList)+len(MapInfo.set)+1))
                 H[0,0] = 10
                 H[1,1] = 0.5
 
-                ff = np.zeros((len(u_s)+len(UnsafeList)+1,1))
+                ff = np.zeros((len(u_s)+len(UnsafeList)+len(MapInfo.set)+1,1))
                 ff[len(u_s):len(u_s)+len(UnsafeList)] = 100
+                ff[len(u_s)+len(UnsafeList):len(u_s)+len(UnsafeList)+len(MapInfo.set)] = 10
+
                 if self.count<-1:    # Needs correction
                         if uq[0]>u1d:
                                 ui = max(u1d,uq[0]-0.1)
@@ -283,8 +298,8 @@ class CBF_CONTROLLER(object):
                 else:
                         ui = u1d
 
-                ff[0] = -10*ui
-                ff[1] = 0.5*0.1*x_r[2]
+                # ff[0] = -10*ui
+                # ff[1] = 0.5*0.1*x_r[2]
                 ff[-1] = 1
                 uq = cvxopt_solve_qp(H, ff, A, b)
                 if uq is None:
@@ -299,14 +314,14 @@ if __name__ == '__main__':
         GoalCenter = np.array([0, 5])
         rGoal = np.power(0.1,2)
         # Unsafe 
-        UnsafeInclude = 5    # consider obstacle if in radius
+        UnsafeInclude = 10    # consider obstacle if in radius
         UnsafeRadius = .5    #radius of unsafe sets/distance from obstacles
         # Enviroment Bounds
         env_bounds = type('', (), {})()
         env_bounds.y_min = -1.7
         env_bounds.y_max = 1.5 
-        env_bounds.x_max = 1.55 
-        env_bounds.x_min = -1.6
+        # env_bounds.x_max = 1.55 
+        # env_bounds.x_min = -1.6
 
         l = 0.01   #bicycle model approximation parameter
         U = np.array([[-0.33,0.33],[-0.3,0.3]])
@@ -331,7 +346,7 @@ if __name__ == '__main__':
         
         try:
 	        rospy.init_node('cbf_controller')
-                cbf_controller = CBF_CONTROLLER(robot,GoalInfo,UnsafeInfo)
+                cbf_controller = CBF_CONTROLLER(robot,GoalInfo,UnsafeInfo,MapInfo)
                 control_priod = 0.1 #[sec] we can change controll priod with this parameter.
                 rospy.Timer(rospy.Duration(control_priod), cbf_controller.controller_loop_callback)
                 rospy.spin()

@@ -47,6 +47,8 @@ def cvxopt_solve_qp(P, q, G=None, h=None, A=None, b=None):
         args.extend([cvxopt.matrix(G), cvxopt.matrix(h)])
         if A is not None:
             args.extend([cvxopt.matrix(A), cvxopt.matrix(b)])
+    cvxopt.solvers.options['show_progress'] = False
+    cvxopt.solvers.options['maxiters'] = 100
     sol = cvxopt.solvers.qp(*args)
     if 'optimal' not in sol['status']:
         return None
@@ -60,10 +62,12 @@ class robot(object):
                 xr1,xr2,xr3,xo1,xo2 = symbols('xr1 xr2 xr3 xo1 xo2')  
                 # v w inputs of robot:
                 u1,u2 = symbols('u1,u2')
+                vx,vy = symbols('vx,vy')
                 # Vector of states and inputs:
                 self.x_r_s = Matrix([xr1,xr2,xr3])
                 self.x_o_s = Matrix([xo1,xo2])
-                self.u_s = Matrix([u1,u2]) 
+                self.u_s = Matrix([u1,u2])
+                self.u_o = Matrix([vx,vy]) 
 
                 self.f = Matrix([0,0,0])
                 self.g = Matrix([[cos(self.x_r_s[2]), -l*sin(self.x_r_s[2])], [sin(self.x_r_s[2]), l*cos(self.x_r_s[2])], [0, 1]])
@@ -72,11 +76,12 @@ class robot(object):
                 self.Real_x_r = lambdify([self.x_r_s], self.x_r_s-Matrix([l*cos(self.x_r_s[2]), l*sin(self.x_r_s[2]), 0]))
                 
                 # Obstacle SDE, not needed if we want to use Keyvan prediction method
-                self.f_o = Matrix([1.5,0])
-                self.g_o = Matrix([0.2, 0])
+                self.f_o = self.u_o
+                # self.f_o = Matrix([0.1, 0.1])
+                self.g_o = Matrix([0.1, 0.1])
 
-                self.f_o_fun = lambdify([self.x_o_s], self.f_o)
-                self.g_o_fun = lambdify([self.x_o_s], self.g_o)
+                # self.f_o_fun = lambdify([self.x_o_s], self.f_o)
+                # self.g_o_fun = lambdify([self.x_o_s], self.g_o)
         
         def GoalFuncs(self,GoalCenter,rGoal):
                 Gset = (self.x_r_s[0]-GoalCenter[0])**2+(self.x_r_s[1]-GoalCenter[1])**2-rGoal
@@ -93,34 +98,43 @@ class robot(object):
                 CBF_d2 =  CBF.diff(self.x_o_s,2)
                 UnsafeInfo.set = lambdify([self.x_r_s,self.x_o_s], Uset)
                 UnsafeInfo.CBF = lambdify([self.x_r_s,self.x_o_s], CBF)
-                UnsafeInfo.ConstCond = lambdify([self.x_r_s,self.x_o_s] , CBF_d.T*Matrix([self.f,self.f_o])+0.5*(self.g_o.T*Matrix([[Matrix(CBF_d2[0,0]),Matrix(CBF_d2[1,0])]])*self.g_o))
+                UnsafeInfo.ConstCond = lambdify([self.x_r_s,self.x_o_s,self.u_o] , CBF_d.T*Matrix([self.f,self.f_o])+0.5*(self.g_o.T*Matrix([[Matrix(CBF_d2[0,0]),Matrix(CBF_d2[1,0])]])*self.g_o))
                 UnsafeInfo.multCond = lambdify([self.x_r_s,self.x_o_s,self.u_s], CBF_d.T*Matrix([self.g*self.u_s, Matrix(np.zeros((len(self.x_o_s),1)))]))
                 return UnsafeInfo
 
         def MapFuncs(self,env_bounds):
                 MapInfo = type('', (), {})()
                 MapInfo.set = []
+                MapInfo.CBF = []
                 MapInfo.setDer = []
                 # x_min = getattr(env_bounds, "x_min", undefined)
                 # x_max = getattr(env_bounds, "x_max", undefined)
                 # y_min = getattr(env_bounds, "y_min", undefined)
                 # y_max = getattr(env_bounds, "y_max", undefined)
                 if hasattr(env_bounds,'x_min'):
-                        Uset = (self.x_r_s[0]-env_bounds.x_min)
+                        Uset = (-self.x_r_s[0]+env_bounds.x_min)
+                        CBF = exp(gamma*Uset)
                         MapInfo.set.append(lambdify([self.x_r_s], Uset))
-                        MapInfo.setDer.append(lambdify([self.x_r_s,self.u_s] , Uset.diff(self.x_r_s).T*self.f_r))
+                        MapInfo.CBF.append(lambdify([self.x_r_s],CBF))
+                        MapInfo.setDer.append(lambdify([self.x_r_s,self.u_s] , CBF.diff(self.x_r_s).T*self.f_r))
                 if hasattr(env_bounds,'x_max'):
-                        Uset = (-self.x_r_s[0]+env_bounds.x_max)
+                        Uset = (self.x_r_s[0]-env_bounds.x_max)
+                        CBF = exp(gamma*Uset)
                         MapInfo.set.append(lambdify([self.x_r_s], Uset))
-                        MapInfo.setDer.append(lambdify([self.x_r_s,self.u_s] , Uset.diff(self.x_r_s).T*self.f_r))
+                        MapInfo.CBF.append(lambdify([self.x_r_s],CBF))
+                        MapInfo.setDer.append(lambdify([self.x_r_s,self.u_s] , CBF.diff(self.x_r_s).T*self.f_r))
                 if hasattr(env_bounds,'y_min'):
-                        Uset = (self.x_r_s[1]-env_bounds.y_min)
+                        Uset = (-self.x_r_s[1]+env_bounds.y_min)
+                        CBF = exp(gamma*Uset)
                         MapInfo.set.append(lambdify([self.x_r_s], Uset))
-                        MapInfo.setDer.append(lambdify([self.x_r_s,self.u_s] , Uset.diff(self.x_r_s).T*self.f_r))                                
+                        MapInfo.CBF.append(lambdify([self.x_r_s],CBF))
+                        MapInfo.setDer.append(lambdify([self.x_r_s,self.u_s] , CBF.diff(self.x_r_s).T*self.f_r))
                 if hasattr(env_bounds,'y_max'):
-                        Uset = (-self.x_r_s[1]+env_bounds.y_max)
+                        Uset = (self.x_r_s[1]-env_bounds.y_max)
+                        CBF = exp(gamma*Uset)
                         MapInfo.set.append(lambdify([self.x_r_s], Uset))
-                        MapInfo.setDer.append(lambdify([self.x_r_s,self.u_s] , Uset.diff(self.x_r_s).T*self.f_r))
+                        MapInfo.CBF.append(lambdify([self.x_r_s],CBF))
+                        MapInfo.setDer.append(lambdify([self.x_r_s,self.u_s] , CBF.diff(self.x_r_s).T*self.f_r))
                 if hasattr(env_bounds,'f'):
                         pass #To be filled later
 
@@ -148,7 +162,7 @@ class CBF_CONTROLLER(object):
                 # listener of tf.
                 self.tfListener = tf.TransformListener()
 
-
+                self.actors = []
                 trajs = type('', (), {})()
                 trajs.hsr = []
                 trajs.actors = []
@@ -189,24 +203,24 @@ class CBF_CONTROLLER(object):
                 # this controller loop call back.
                 self.count += 1
                 now = rospy.get_rostime()
-                # self.trajs.time.append(now)
+                self.trajs.time.append(now.secs+now.nsecs*pow(10,-9))
                 if DEBUG:
                         rospy.loginfo('Current time %i %i', now.secs, now.nsecs)
                         rospy.loginfo('tOdometry\n %s', self.odometry)
                 # get human model state from Gazebo
-                model_properties = self.get_model_pro()
-                actors = []
-                for model_name in model_properties.model_names:
-                        if re.search('actor*', model_name):  # if the model name is actor*, it will catch them.
-                                actors.append(model_name) 
+                if self.count==1:
+                        model_properties = self.get_model_pro()
+                        for model_name in model_properties.model_names:
+                                if re.search('actor*', model_name) and not model_name in self.actors:  # if the model name is actor*, it will catch them.
+                                        self.actors.append(model_name) 
                 actors_data = []
-                for actor in actors:
+                for actor in self.actors:
                         model_actor = GetModelStateRequest()
                         model_actor.model_name = actor
                         model_actor = self.get_model_srv(model_actor) # the pose date is based on /map
-                        actor_base_footprint_pose = self.gazebo_pos_transformPose('base_footprint', model_actor) # trasfer /map->/base_footprint
-                        angular = orientation2angular(actor_base_footprint_pose.pose.orientation)      # transfer orientaton(quaternion)->agular(euler)
-                        p = actor_base_footprint_pose.pose.position
+                        # actor_base_footprint_pose = self.gazebo_pos_transformPose('base_footprint', model_actor) # trasfer /map->/base_footprint
+                        angular = orientation2angular(model_actor.pose.orientation)      # transfer orientaton(quaternion)->agular(euler)
+                        p = model_actor.pose.position
                         actors_data.append([p.x,p.y, angular.z])
                         if DEBUG:
                                 rospy.loginfo('%s in timestamp:\n%s', actor, model_actor.header.stamp) # time stamp is here.
@@ -224,6 +238,17 @@ class CBF_CONTROLLER(object):
                 # making vw data and publish it.
                 vel_msg = Twist()
                 # Compute controller
+                if abs(p.x)<1.5 and self.flag == 0:
+                        self.flag = 1
+                        env_bounds = type('', (), {})()
+                        env_bounds.x_max = 1.25 
+                        env_bounds.x_min = -1.35
+                        self.MapInfo = self.robot.MapFuncs(env_bounds)
+                        GoalCenter = np.array([0, 5])
+                        self.GoalInfo = self.robot.GoalFuncs(GoalCenter,rGoal)
+
+
+
                 u = self.cbf_controller_compute()
                 vel_msg.linear.x  = u[0]
                 vel_msg.angular.z = u[1]
@@ -231,15 +256,24 @@ class CBF_CONTROLLER(object):
                 self.trajs.commands.append(u)
                                
 
-                if self.count > 100:
+                if self.count > 1000:
                         rospy.loginfo('reach counter!!')
                         rospy.signal_shutdown('reach counter')
-                
+                elif self.GoalInfo.set(x_r)<0:
+                        rospy.loginfo('reached Goal set!!')
+                        rospy.signal_shutdown('reached Goal set')
                 
         def cbf_controller_compute(self):
                 x_r = np.array(self.trajs.hsr[len(self.trajs.hsr)-1])
                 x_o = np.array(self.trajs.actors[len(self.trajs.actors)-1])
                 u_s = self.robot.u_s
+                if self.count>2:
+                        x_o_pre = np.array(self.trajs.actors[len(self.trajs.actors)-3])
+                        dt = self.trajs.time[len(self.trajs.time)-1]-self.trajs.time[len(self.trajs.time)-3]
+                        u_o = (x_o[:,0:2]-x_o_pre[:,0:2])/dt
+                else:
+                        u_o = np.zeros((len(x_o),len(self.robot.u_o)))
+
                 Unsafe = self.UnsafeInfo
                 Goal = self.GoalInfo
                 Map = self.MapInfo
@@ -249,59 +283,103 @@ class CBF_CONTROLLER(object):
                         Dists[j] = Unsafe.set(x_r,  x_o[j][0:2])
                         if Dists[j]<UnsafeInclude:
                                 UnsafeList.append(j)
-                ai = 1
-                #Ax<=b, x = [v, w , b1, b2,..., bn, b'1, b'2,b'm, delta ]  
-                # where b is constant in Eq (14) of paper "Risk-bounded  Control  using  Stochastic  Barrier  Functions"
-                #b' is the slack variable for map constraints 
-                # delta is for lyapunov function
-                A = np.zeros((2*len(UnsafeList)+2*len(u_s)+len(MapInfo.set)+2,len(u_s)+len(UnsafeList)+len(MapInfo.set)+1))
-                b =np.zeros((2*len(u_s)+2*len(UnsafeList)+len(MapInfo.set)+2))
-                for j in range(len(UnsafeList)):
-                        # CBF Constraints        
-                        A[2*j,np.append(np.arange(len(u_s)),[len(u_s)+j])] = [Unsafe.multCond(x_r,  x_o[UnsafeList[j]][0:2],[1, 0]), Unsafe.multCond(x_r,x_o[UnsafeList[j]][0:2],[0, 1]), -1] # multiplier of u , bi
-                        b[2*j] = -ai* Unsafe.CBF(x_r, x_o[UnsafeList[j]][0:2])- Unsafe.ConstCond(x_r,  x_o[UnsafeList[j]][0:2])  
-                        # Constraints on bi to satisfy pi risk
-                        A[2*j+1,len(u_s)+j] = 1
-                        b[2*j+1] = min(ai, -1/T*log((1-risk))/(1-Unsafe.CBF(x_r, x_o[UnsafeList[j]][0:2])))
+                ai = .1
                 
-                # Adding U constraint
-                A[2*len(UnsafeList),0] = 1; b[2*len(UnsafeList)] = U[0,1]
-                A[2*len(UnsafeList)+1,0] = -1;  b[2*len(UnsafeList)+1] = -U[0,0]
-                A[2*len(UnsafeList)+2,1] = 1; b[2*len(UnsafeList)+2] = U[1,1]
-                A[2*len(UnsafeList)+3,1] = -1; b[2*len(UnsafeList)+3] = -U[1,0]
                 
-                # Adding map constraints
-                for j in range(len(MapInfo.set)):
-                        A[2*len(UnsafeList)+2*len(u_s)+j,np.append(np.arange(len(u_s)),[len(u_s)+len(UnsafeList)+j])] = [MapInfo.setDer[j](x_r,[1, 0]), MapInfo.setDer[j](x_r,[0, 1]), -1]
-                        b[2*len(UnsafeList)+2*len(u_s)+j] = 0
+                if findBestCommandAnyway:
+                        #Ax<=b, x = [v, w , b1,bh1 b2, bh2..., bn, b'1, b'2,b'm, delta ]  
+                        # where b is constant in Eq (14) of paper "Risk-bounded  Control  using  Stochastic  Barrier  Functions"
+                        #b' is the slack variable for map constraints 
+                        # delta is for lyapunov function
+                        A = np.zeros((2*len(UnsafeList)+2*len(u_s)+len(Map.set)+2,len(u_s)+2*len(UnsafeList)+len(Map.set)+1))
+                        b =np.zeros((2*len(u_s)+2*len(UnsafeList)+len(Map.set)+2))
+                        for j in range(len(UnsafeList)):
+                                # CBF Constraints        
+                                A[2*j,np.append(np.arange(len(u_s)),[len(u_s)+2*j])] = [Unsafe.multCond(x_r,  x_o[UnsafeList[j]][0:2],[1, 0]), Unsafe.multCond(x_r,x_o[UnsafeList[j]][0:2],[0, 1]), -1] # multiplier of u , bi
+                                b[2*j] = -ai* Unsafe.CBF(x_r, x_o[UnsafeList[j]][0:2])- Unsafe.ConstCond(x_r,  x_o[UnsafeList[j]][0:2],u_o[UnsafeList[j]]) 
+                                # Constraints on bi to satisfy pi risk
+                                A[2*j+1,len(u_s)+2*j] = 1; A[2*j+1,len(u_s)+2*j+1] = -1 
+                                b[2*j+1] = min(ai, -1/T*log((1-risk))/(1-Unsafe.CBF(x_r, x_o[UnsafeList[j]][0:2])))
 
-                # Adding Goal based Lyapunov !!!!!!!!!!!!!!!!! Needs to be changed for a different example 
-                A[2*len(UnsafeList)+2*len(u_s)+len(MapInfo.set),0:2] = [Goal.Lyap(x_r,[1,0]), Goal.Lyap(x_r,[0, 1])]
-                A[2*len(UnsafeList)+2*len(u_s)+len(MapInfo.set),-1] = -1
-                b[2*len(UnsafeList)+2*len(u_s)+len(MapInfo.set)] = 0
-                A[2*len(UnsafeList)+2*len(u_s)+len(MapInfo.set)+1,-1] = 1
-                b[2*len(UnsafeList)+2*len(u_s)+len(MapInfo.set)+1] = np.finfo(float).eps
-                
-                H = np.zeros((len(u_s)+len(UnsafeList)+len(MapInfo.set)+1,len(u_s)+len(UnsafeList)+len(MapInfo.set)+1))
-                H[0,0] = 10
-                H[1,1] = 0.5
 
-                ff = np.zeros((len(u_s)+len(UnsafeList)+len(MapInfo.set)+1,1))
-                ff[len(u_s):len(u_s)+len(UnsafeList)] = 100
-                ff[len(u_s)+len(UnsafeList):len(u_s)+len(UnsafeList)+len(MapInfo.set)] = 10
+                        
+                        # Adding U constraint
+                        A[2*len(UnsafeList),0] = 1; b[2*len(UnsafeList)] = U[0,1]
+                        A[2*len(UnsafeList)+1,0] = -1;  b[2*len(UnsafeList)+1] = -U[0,0]
+                        A[2*len(UnsafeList)+2,1] = 1; b[2*len(UnsafeList)+2] = U[1,1]
+                        A[2*len(UnsafeList)+3,1] = -1; b[2*len(UnsafeList)+3] = -U[1,0]
+                        
+                        # Adding map constraints
+                        for j in range(len(Map.set)):
+                                A[2*len(UnsafeList)+2*len(u_s)+j,np.append(np.arange(len(u_s)),[len(u_s)+2*len(UnsafeList)+j])] = [Map.setDer[j](x_r,[1, 0]), Map.setDer[j](x_r,[0, 1]), -1]
+                                b[2*len(UnsafeList)+2*len(u_s)+j] = -Map.CBF[j](x_r)
 
-                if self.count<-1:    # Needs correction
-                        if uq[0]>u1d:
-                                ui = max(u1d,uq[0]-0.1)
-                        else:
-                                ui = min(u1d,uq[0]+0.1)
+                        # Adding Goal based Lyapunov !!!!!!!!!!!!!!!!! Needs to be changed for a different example 
+                        A[2*len(UnsafeList)+2*len(u_s)+len(Map.set),0:2] = [Goal.Lyap(x_r,[1,0]), Goal.Lyap(x_r,[0, 1])]
+                        A[2*len(UnsafeList)+2*len(u_s)+len(Map.set),-1] = -1
+                        b[2*len(UnsafeList)+2*len(u_s)+len(Map.set)] = 0
+                        A[2*len(UnsafeList)+2*len(u_s)+len(Map.set)+1,-1] = 1
+                        b[2*len(UnsafeList)+2*len(u_s)+len(Map.set)+1] = np.finfo(float).eps+1
+                        
+                        H = np.zeros((len(u_s)+2*len(UnsafeList)+len(Map.set)+1,len(u_s)+2*len(UnsafeList)+len(Map.set)+1))
+                        H[0,0] = 0
+                        H[1,1] = 0
+
+                        ff = np.zeros((len(u_s)+2*len(UnsafeList)+len(Map.set)+1,1))
+                        for j in range(len(UnsafeList)):
+                                ff[len(u_s)+2*j] = 10
+                                ff[len(u_s)+2*j+1] = 20
+
+                        ff[len(u_s)+2*len(UnsafeList):len(u_s)+2*len(UnsafeList)+len(Map.set)] = 10
+                        ff[-1] = np.ceil(self.count/100.0)
                 else:
-                        ui = u1d
+                        #Ax<=b, x = [v, w , b1, b2,..., bn, b'1, b'2,b'm, delta ]  
+                        # where b is constant in Eq (14) of paper "Risk-bounded  Control  using  Stochastic  Barrier  Functions"
+                        #b' is the slack variable for map constraints 
+                        # delta is for lyapunov function
+                        A = np.zeros((2*len(UnsafeList)+2*len(u_s)+len(Map.set)+2,len(u_s)+len(UnsafeList)+len(Map.set)+1))
+                        b =np.zeros((2*len(u_s)+2*len(UnsafeList)+len(Map.set)+2))
+                        for j in range(len(UnsafeList)):
+                                # CBF Constraints        
+                                A[2*j,np.append(np.arange(len(u_s)),[len(u_s)+j])] = [Unsafe.multCond(x_r,  x_o[UnsafeList[j]][0:2],[1, 0]), Unsafe.multCond(x_r,x_o[UnsafeList[j]][0:2],[0, 1]), -1] # multiplier of u , bi
+                                b[2*j] = -ai* Unsafe.CBF(x_r, x_o[UnsafeList[j]][0:2])- Unsafe.ConstCond(x_r,  x_o[UnsafeList[j]][0:2],u_o[UnsafeList[j]]) 
+                                # Constraints on bi to satisfy pi risk
+                                A[2*j+1,len(u_s)+j] = 1
+                                b[2*j+1] = min(ai, -1/T*log((1-risk))/(1-Unsafe.CBF(x_r, x_o[UnsafeList[j]][0:2])))
+                        
+                        # Adding U constraint
+                        A[2*len(UnsafeList),0] = 1; b[2*len(UnsafeList)] = U[0,1]
+                        A[2*len(UnsafeList)+1,0] = -1;  b[2*len(UnsafeList)+1] = -U[0,0]
+                        A[2*len(UnsafeList)+2,1] = 1; b[2*len(UnsafeList)+2] = U[1,1]
+                        A[2*len(UnsafeList)+3,1] = -1; b[2*len(UnsafeList)+3] = -U[1,0]
+                        
+                        # Adding map constraints
+                        for j in range(len(Map.set)):
+                                A[2*len(UnsafeList)+2*len(u_s)+j,np.append(np.arange(len(u_s)),[len(u_s)+len(UnsafeList)+j])] = [Map.setDer[j](x_r,[1, 0]), Map.setDer[j](x_r,[0, 1]), -1]
+                                b[2*len(UnsafeList)+2*len(u_s)+j] = -Map.CBF[j](x_r)
 
-                # ff[0] = -10*ui
-                # ff[1] = 0.5*0.1*x_r[2]
-                ff[-1] = 1
-                uq = cvxopt_solve_qp(H, ff, A, b)
+                        # Adding Goal based Lyapunov !!!!!!!!!!!!!!!!! Needs to be changed for a different example 
+                        A[2*len(UnsafeList)+2*len(u_s)+len(Map.set),0:2] = [Goal.Lyap(x_r,[1,0]), Goal.Lyap(x_r,[0, 1])]
+                        A[2*len(UnsafeList)+2*len(u_s)+len(Map.set),-1] = -1
+                        b[2*len(UnsafeList)+2*len(u_s)+len(Map.set)] = 0
+                        A[2*len(UnsafeList)+2*len(u_s)+len(Map.set)+1,-1] = 1
+                        b[2*len(UnsafeList)+2*len(u_s)+len(Map.set)+1] = np.finfo(float).eps+1
+                        
+                        H = np.zeros((len(u_s)+len(UnsafeList)+len(Map.set)+1,len(u_s)+len(UnsafeList)+len(Map.set)+1))
+                        H[0,0] = 1
+                        H[1,1] = 0
+
+                        ff = np.zeros((len(u_s)+len(UnsafeList)+len(Map.set)+1,1))
+                        ff[len(u_s):len(u_s)+len(UnsafeList)] = 10
+                        ff[len(u_s)+len(UnsafeList):len(u_s)+len(UnsafeList)+len(Map.set)] = 10
+                        ff[-1] = np.ceil(self.count/100.0)
+
+                try:
+                        uq = cvxopt_solve_qp(H, ff, A, b)
+                except ValueError:
+                        uq = [0,0]
+                        rospy.loginfo('Domain Error in cvx')
+
                 if uq is None:
                         uq = [0,0]
                         rospy.loginfo('infeasible QP')
@@ -310,24 +388,26 @@ class CBF_CONTROLLER(object):
 
 if __name__ == '__main__':
         ## Parameters  
+        findBestCommandAnyway = 1  #make this zero if you don't want to do anything if it's riskier than intended
+                                   #use 1 if you want to do the best even if there is risk 
         # Goal info
-        GoalCenter = np.array([0, 5])
-        rGoal = np.power(0.1,2)
+        GoalCenter = np.array([0, 0])
+        rGoal = np.power(0.5,2)
         # Unsafe 
         UnsafeInclude = 10    # consider obstacle if in radius
-        UnsafeRadius = .5    #radius of unsafe sets/distance from obstacles
+        UnsafeRadius = 0.3    #radius of unsafe sets/distance from obstacles
         # Enviroment Bounds
         env_bounds = type('', (), {})()
-        env_bounds.y_min = -1.7
-        env_bounds.y_max = 1.5 
-        # env_bounds.x_max = 1.55 
-        # env_bounds.x_min = -1.6
+        env_bounds.y_min = -1.2
+        env_bounds.y_max = 1 
+        # env_bounds.x_max = 1.25
+        # env_bounds.x_min = -1.35
 
         l = 0.01   #bicycle model approximation parameter
         U = np.array([[-0.33,0.33],[-0.3,0.3]])
         T = 1  #Lookahead horizon
         risk = 0.1    #max risk desired        
-        gamma = 5       #CBF coefficient
+        gamma = 2       #CBF coefficient
         u1d = 0  #desired input to save energy!
         # Plotting options 
         plotit = 1

@@ -54,6 +54,47 @@ def cvxopt_solve_qp(P, q, G=None, h=None, A=None, b=None):
         return None
     return np.array(sol['x']).reshape((P.shape[1],))
 
+def plottrajs(trajs):
+        for j in range(len(trajs.hsr)):
+                plt.axis([-10,10,-10,10],color ="black")
+                plt.plot([-1.4,-1.4],[-7,7],color ="black")
+                plt.plot([1.3,1.3],[-7,-1.5],color ="black")
+                plt.plot([1.3,1.3],[1.4,7],color ="black")
+                plt.plot([1.3,7],[1.4,1.4],color ="black")
+                plt.plot([1.3,7],[-1.5,-1.5],color ="black")
+
+                plt.plot(trajs.hsr[j][1],-trajs.hsr[j][0],color ="green",marker = 'o')
+                plt.arrow(float(trajs.hsr[j][1]),float(-trajs.hsr[j][0]), float(2*trajs.commands[j][0]*sin(trajs.hsr[j][2])), float(-2*trajs.commands[j][0]*cos(trajs.hsr[j][2])), width = 0.05)               
+                for k in range(len(trajs.actors[j])):
+                        plt.plot(trajs.actors[j][k][1],-trajs.actors[j][k][0],color ="red",marker = 'o')
+                plt.draw()
+                plt.pause(np.finfo(float).eps)
+                plt.clf()
+        plt.ion()
+        plt.axis([-10,10,-10,10],color ="black")
+        plt.plot([-1.4,-1.4],[-7,7],color ="black")
+        plt.plot([1.3,1.3],[-7,-1.5],color ="black")
+        plt.plot([1.3,1.3],[1.4,7],color ="black")
+        plt.plot([1.3,7],[1.4,1.4],color ="black")
+        plt.plot([1.3,7],[-1.5,-1.5],color ="black")
+        for j in range(len(trajs.hsr)):
+                plt.axis([-10,10,-10,10])
+                plt.plot(trajs.hsr[j][1],-trajs.hsr[j][0],color ="green",marker = 'o')               
+                for k in range(len(trajs.actors[j])):
+                        plt.plot(trajs.actors[j][k][1],-trajs.actors[j][k][0],color ="red",marker = 'o')
+        plt.show()
+        plt.pause(np.finfo(float).eps)
+        plt.ioff()
+
+        plt.figure(2)
+        for k in range(len(trajs.time)):
+                plt.plot(trajs.time[k], trajs.commands[k][0],color ="green",marker = 'o')
+                plt.plot(trajs.time[k], trajs.commands[k][1],color ="red",marker = 'o')
+
+        plt.show()
+        # plt.clf()
+
+
 class robot(object):
         def __init__(self,l):
                #Symbolic Variables
@@ -139,7 +180,7 @@ class robot(object):
                         pass #To be filled later
 
                 return MapInfo
-                
+
 
 
 
@@ -199,6 +240,9 @@ class CBF_CONTROLLER(object):
 
                 return gazebo_pos_trans
 
+
+
+
         def controller_loop_callback(self, event):
                 # this controller loop call back.
                 self.count += 1
@@ -241,8 +285,8 @@ class CBF_CONTROLLER(object):
                 if abs(p.x)<1.5 and self.flag == 0:
                         self.flag = 1
                         env_bounds = type('', (), {})()
-                        env_bounds.x_max = 1.25 
-                        env_bounds.x_min = -1.35
+                        env_bounds.x_max = 1.2 
+                        env_bounds.x_min = -1.3
                         self.MapInfo = self.robot.MapFuncs(env_bounds)
                         GoalCenter = np.array([0, 5])
                         self.GoalInfo = self.robot.GoalFuncs(GoalCenter,rGoal)
@@ -253,7 +297,7 @@ class CBF_CONTROLLER(object):
                 vel_msg.linear.x  = u[0]
                 vel_msg.angular.z = u[1]
                 self.vw_publisher.publish(vel_msg)
-                self.trajs.commands.append(u)
+                self.trajs.commands.append([u[0],u[1]])
                                
 
                 if self.count > 1000:
@@ -262,7 +306,7 @@ class CBF_CONTROLLER(object):
                 elif self.GoalInfo.set(x_r)<0:
                         rospy.loginfo('reached Goal set!!')
                         rospy.signal_shutdown('reached Goal set')
-                
+
         def cbf_controller_compute(self):
                 x_r = np.array(self.trajs.hsr[len(self.trajs.hsr)-1])
                 x_o = np.array(self.trajs.actors[len(self.trajs.actors)-1])
@@ -394,8 +438,8 @@ if __name__ == '__main__':
         GoalCenter = np.array([0, 0])
         rGoal = np.power(0.5,2)
         # Unsafe 
-        UnsafeInclude = 10    # consider obstacle if in radius
-        UnsafeRadius = 0.3    #radius of unsafe sets/distance from obstacles
+        UnsafeInclude = 12    # consider obstacle if in radius
+        UnsafeRadius = 0.5    #radius of unsafe sets/distance from obstacles
         # Enviroment Bounds
         env_bounds = type('', (), {})()
         env_bounds.y_min = -1.2
@@ -433,5 +477,6 @@ if __name__ == '__main__':
 
         except rospy.ROSInterruptException:
                 pass
+        plottrajs(cbf_controller.trajs)
+        
 
-        print('You can put data save here')

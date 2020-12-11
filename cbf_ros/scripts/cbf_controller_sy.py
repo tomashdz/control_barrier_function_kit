@@ -12,6 +12,7 @@ import numpy as np
 from scipy.integrate import odeint
 from sympy import symbols, Matrix, sin, cos, lambdify, exp, sqrt, log
 import matplotlib.pyplot as plt  
+import matplotlib.animation as animation
 import cvxopt as cvxopt
 
 # ROS msg
@@ -55,21 +56,22 @@ def cvxopt_solve_qp(P, q, G=None, h=None, A=None, b=None):
     return np.array(sol['x']).reshape((P.shape[1],))
 
 def plottrajs(trajs):
-        for j in range(len(trajs.hsr)):
-                plt.axis([-10,10,-10,10],color ="black")
-                plt.plot([-1.4,-1.4],[-7,7],color ="black")
-                plt.plot([1.3,1.3],[-7,-1.5],color ="black")
-                plt.plot([1.3,1.3],[1.4,7],color ="black")
-                plt.plot([1.3,7],[1.4,1.4],color ="black")
-                plt.plot([1.3,7],[-1.5,-1.5],color ="black")
+        if plotanimation:
+                for j in range(len(trajs.hsr)):
+                        plt.axis([-10,10,-10,10],color ="black")
+                        plt.plot([-1.4,-1.4],[-7,7],color ="black")
+                        plt.plot([1.3,1.3],[-7,-1.5],color ="black")
+                        plt.plot([1.3,1.3],[1.4,7],color ="black")
+                        plt.plot([1.3,7],[1.4,1.4],color ="black")
+                        plt.plot([1.3,7],[-1.5,-1.5],color ="black")
 
-                plt.plot(trajs.hsr[j][1],-trajs.hsr[j][0],color ="green",marker = 'o')
-                plt.arrow(float(trajs.hsr[j][1]),float(-trajs.hsr[j][0]), float(2*trajs.commands[j][0]*sin(trajs.hsr[j][2])), float(-2*trajs.commands[j][0]*cos(trajs.hsr[j][2])), width = 0.05)               
-                for k in range(len(trajs.actors[j])):
-                        plt.plot(trajs.actors[j][k][1],-trajs.actors[j][k][0],color ="red",marker = 'o')
-                plt.draw()
-                plt.pause(np.finfo(float).eps)
-                plt.clf()
+                        plt.plot(trajs.hsr[j][1],-trajs.hsr[j][0],color ="green",marker = 'o')
+                        plt.arrow(float(trajs.hsr[j][1]),float(-trajs.hsr[j][0]), float(2*trajs.commands[j][0]*sin(trajs.hsr[j][2])), float(-2*trajs.commands[j][0]*cos(trajs.hsr[j][2])), width = 0.05)               
+                        for k in range(len(trajs.actors[j])):
+                                plt.plot(trajs.actors[j][k][1],-trajs.actors[j][k][0],color ="red",marker = 'o')
+                        plt.draw()
+                        plt.pause(np.finfo(float).eps)
+                        plt.clf()
         plt.ion()
         plt.axis([-10,10,-10,10],color ="black")
         plt.plot([-1.4,-1.4],[-7,7],color ="black")
@@ -82,17 +84,39 @@ def plottrajs(trajs):
                 plt.plot(trajs.hsr[j][1],-trajs.hsr[j][0],color ="green",marker = 'o')               
                 for k in range(len(trajs.actors[j])):
                         plt.plot(trajs.actors[j][k][1],-trajs.actors[j][k][0],color ="red",marker = 'o')
-        plt.show()
+        plt.draw()
         plt.pause(np.finfo(float).eps)
         plt.ioff()
 
-        plt.figure(2)
-        for k in range(len(trajs.time)):
-                plt.plot(trajs.time[k], trajs.commands[k][0],color ="green",marker = 'o')
-                plt.plot(trajs.time[k], trajs.commands[k][1],color ="red",marker = 'o')
 
-        plt.show()
-        # plt.clf()
+        fig, axs = plt.subplots(3)
+        axs[0].set_title('controls: velocity (green), angular velocity (red)')
+        # axs[1].set_title('risk')
+        # axs[2].set_title('min Dist')
+        axs[0].set(ylabel = 'controls')
+        axs[1].set(ylabel = 'risk')
+        axs[2].set(xlabel = 'time', ylabel = 'min Dist')
+
+        for k in range(len(trajs.time)):
+                axs[0].plot(trajs.time[k], trajs.commands[k][0],color ="green",marker = 'o')
+                axs[0].plot(trajs.time[k], trajs.commands[k][1],color ="red",marker = 'o')
+                if trajs.risk[k]<risk:
+                        axs[1].plot(trajs.time[k], trajs.risk[k],color ="green",marker = 'o')
+                else:
+                        axs[1].plot(trajs.time[k], trajs.risk[k],color ="red",marker = 'o')
+                axs[2].plot(trajs.time[k], trajs.minDist[k],color ="green",marker = 'o')
+
+
+        plt.draw()
+        plt.pause(60) 
+        1
+        # plt.ioff()
+        # plt.figure(3)
+        # for k in range(len(trajs.time)):
+        #         plt.plot(trajs.time[k], trajs.risk[k],color ="green",marker = 'o')
+        # plt.draw()
+        # 1
+
 
 
 class robot(object):
@@ -119,7 +143,7 @@ class robot(object):
                 # Obstacle SDE, not needed if we want to use Keyvan prediction method
                 self.f_o = self.u_o
                 # self.f_o = Matrix([0.1, 0.1])
-                self.g_o = Matrix([0.1, 0.1])
+                self.g_o = Matrix([0.2, 0.2])
 
                 # self.f_o_fun = lambdify([self.x_o_s], self.f_o)
                 # self.g_o_fun = lambdify([self.x_o_s], self.g_o)
@@ -209,6 +233,8 @@ class CBF_CONTROLLER(object):
                 trajs.actors = []
                 trajs.commands = []
                 trajs.time = []
+                trajs.risk = []
+                trajs.minDist = []
                 self.trajs = trajs
                 self.robot = robot
                 self.GoalInfo = GoalInfo
@@ -288,7 +314,7 @@ class CBF_CONTROLLER(object):
                         env_bounds.x_max = 1.2 
                         env_bounds.x_min = -1.3
                         self.MapInfo = self.robot.MapFuncs(env_bounds)
-                        GoalCenter = np.array([0, 5])
+                        GoalCenter = np.array([0, 5.5])
                         self.GoalInfo = self.robot.GoalFuncs(GoalCenter,rGoal)
 
 
@@ -327,8 +353,14 @@ class CBF_CONTROLLER(object):
                         Dists[j] = Unsafe.set(x_r,  x_o[j][0:2])
                         if Dists[j]<UnsafeInclude:
                                 UnsafeList.append(j)
-                ai = .1
-                
+                ai = 1
+                if min(Dists)<0:
+                        InUnsafe = 1
+                else:
+                        InUnsafe = 0
+                minDist = min(Dists)
+                minJ = np.where(Dists == minDist)
+
                 
                 if findBestCommandAnyway:
                         #Ax<=b, x = [v, w , b1,bh1 b2, bh2..., bn, b'1, b'2,b'm, delta ]  
@@ -343,7 +375,11 @@ class CBF_CONTROLLER(object):
                                 b[2*j] = -ai* Unsafe.CBF(x_r, x_o[UnsafeList[j]][0:2])- Unsafe.ConstCond(x_r,  x_o[UnsafeList[j]][0:2],u_o[UnsafeList[j]]) 
                                 # Constraints on bi to satisfy pi risk
                                 A[2*j+1,len(u_s)+2*j] = 1; A[2*j+1,len(u_s)+2*j+1] = -1 
-                                b[2*j+1] = min(ai, -1/T*log((1-risk))/(1-Unsafe.CBF(x_r, x_o[UnsafeList[j]][0:2])))
+                                if Unsafe.CBF(x_r, x_o[UnsafeList[j]][0:2])<1:
+                                        b[2*j+1] = min(ai, -1/T*log((1-risk)/(1-Unsafe.CBF(x_r, x_o[UnsafeList[j]][0:2]))))
+                                else:
+                                        b[2*j+1] = 0
+
 
 
                         
@@ -371,10 +407,11 @@ class CBF_CONTROLLER(object):
 
                         ff = np.zeros((len(u_s)+2*len(UnsafeList)+len(Map.set)+1,1))
                         for j in range(len(UnsafeList)):
-                                ff[len(u_s)+2*j] = 10
-                                ff[len(u_s)+2*j+1] = 20
-
-                        ff[len(u_s)+2*len(UnsafeList):len(u_s)+2*len(UnsafeList)+len(Map.set)] = 10
+                                ff[len(u_s)+2*j] = 65
+                                H[len(u_s)+2*j+1,len(u_s)+2*j+1] = 10000
+                                # ff[len(u_s)+2*j+1] = 50* Unsafe.CBF(x_r, x_o[minJ[0][0]][0:2])
+                
+                        ff[len(u_s)+2*len(UnsafeList):len(u_s)+2*len(UnsafeList)+len(Map.set)] = 20
                         ff[-1] = np.ceil(self.count/100.0)
                 else:
                         #Ax<=b, x = [v, w , b1, b2,..., bn, b'1, b'2,b'm, delta ]  
@@ -389,8 +426,10 @@ class CBF_CONTROLLER(object):
                                 b[2*j] = -ai* Unsafe.CBF(x_r, x_o[UnsafeList[j]][0:2])- Unsafe.ConstCond(x_r,  x_o[UnsafeList[j]][0:2],u_o[UnsafeList[j]]) 
                                 # Constraints on bi to satisfy pi risk
                                 A[2*j+1,len(u_s)+j] = 1
-                                b[2*j+1] = min(ai, -1/T*log((1-risk))/(1-Unsafe.CBF(x_r, x_o[UnsafeList[j]][0:2])))
-                        
+                                if Unsafe.CBF(x_r, x_o[UnsafeList[j]][0:2])<1:
+                                        b[2*j+1] = min(ai, -1/T*log((1-risk)/(1-Unsafe.CBF(x_r, x_o[UnsafeList[j]][0:2]))))
+                                else:
+                                        b[2*j+1] = 0                        
                         # Adding U constraint
                         A[2*len(UnsafeList),0] = 1; b[2*len(UnsafeList)] = U[0,1]
                         A[2*len(UnsafeList)+1,0] = -1;  b[2*len(UnsafeList)+1] = -U[0,0]
@@ -410,11 +449,11 @@ class CBF_CONTROLLER(object):
                         b[2*len(UnsafeList)+2*len(u_s)+len(Map.set)+1] = np.finfo(float).eps+1
                         
                         H = np.zeros((len(u_s)+len(UnsafeList)+len(Map.set)+1,len(u_s)+len(UnsafeList)+len(Map.set)+1))
-                        H[0,0] = 1
+                        H[0,0] = 0
                         H[1,1] = 0
 
                         ff = np.zeros((len(u_s)+len(UnsafeList)+len(Map.set)+1,1))
-                        ff[len(u_s):len(u_s)+len(UnsafeList)] = 10
+                        ff[len(u_s):len(u_s)+len(UnsafeList)] = 20
                         ff[len(u_s)+len(UnsafeList):len(u_s)+len(UnsafeList)+len(Map.set)] = 10
                         ff[-1] = np.ceil(self.count/100.0)
 
@@ -427,6 +466,30 @@ class CBF_CONTROLLER(object):
                 if uq is None:
                         uq = [0,0]
                         rospy.loginfo('infeasible QP')
+                
+                if findBestCommandAnyway and len(uq[2:len(uq)-2*len(Map.set)-1:2])>0:   # If humans are around and findbestcommand active
+                        if InUnsafe:
+                                self.trajs.risk.append(1.0)
+                        else:
+                                r = np.zeros(len(uq[2:len(uq)-2*len(Map.set)-1:2]))
+                                for k in range(len(uq[2:len(uq)-2*len(Map.set)-1:2])):
+                                        r[k] = min(1, max(0,1-(1-Unsafe.CBF(x_r, x_o[UnsafeList[k]][0:2]))*exp(-uq[2*k+2]*T)))
+                                        Dists[k] = Unsafe.set(x_r , x_o[UnsafeList[k]][0:2])
+                                self.trajs.risk.append(max(r))    
+                elif not findBestCommandAnyway and len(uq[2:len(uq)-len(Map.set)-1])>0:
+                        r = np.zeros(len(uq[2:len(uq)-len(Map.set)-1]))
+                        for k in range(len(uq[2:len(uq)-len(Map.set)-1])):
+                                r[k] = min(1, max(0,1-(1-Unsafe.CBF(x_r, x_o[UnsafeList[k]][0:2]))*exp(-uq[k+2]*T)))
+                                Dists[k] = Unsafe.set(x_r , x_o[UnsafeList[k]][0:2])
+                        self.trajs.risk.append(max(r))
+
+                elif not findBestCommandAnyway and len(uq) == 2:  # feasible solution is not found
+                        for k in range(len(UnsafeList)):
+                                        Dists[k] = Unsafe.set(x_r , x_o[UnsafeList[k]][0:2])
+                        self.trajs.risk.append(-risk)  # meaning that solution is not found 
+                else:  # No human is around 
+                        self.trajs.risk.append(0.0)    
+                self.trajs.minDist.append(minDist)
 
                 return uq
 
@@ -434,12 +497,13 @@ if __name__ == '__main__':
         ## Parameters  
         findBestCommandAnyway = 1  #make this zero if you don't want to do anything if it's riskier than intended
                                    #use 1 if you want to do the best even if there is risk 
+        plotanimation = 0
         # Goal info
         GoalCenter = np.array([0, 0])
         rGoal = np.power(0.5,2)
         # Unsafe 
         UnsafeInclude = 12    # consider obstacle if in radius
-        UnsafeRadius = 0.5    #radius of unsafe sets/distance from obstacles
+        UnsafeRadius = 0.6    #radius of unsafe sets/distance from obstacles
         # Enviroment Bounds
         env_bounds = type('', (), {})()
         env_bounds.y_min = -1.2
@@ -450,9 +514,9 @@ if __name__ == '__main__':
         l = 0.01   #bicycle model approximation parameter
         U = np.array([[-0.33,0.33],[-0.3,0.3]])
         T = 1  #Lookahead horizon
-        risk = 0.1    #max risk desired        
-        gamma = 2       #CBF coefficient
-        u1d = 0  #desired input to save energy!
+        risk = 0.1    # max risk desired        
+        gamma = 2       # CBF coefficient
+        u1d = 0  # desired input to save energy!
         # Plotting options 
         plotit = 1
         plotlanes = 1
@@ -471,7 +535,7 @@ if __name__ == '__main__':
         try:
 	        rospy.init_node('cbf_controller')
                 cbf_controller = CBF_CONTROLLER(robot,GoalInfo,UnsafeInfo,MapInfo)
-                control_priod = 0.1 #[sec] we can change controll priod with this parameter.
+                control_priod = 0.05 #[sec] we can change controll priod with this parameter.
                 rospy.Timer(rospy.Duration(control_priod), cbf_controller.controller_loop_callback)
                 rospy.spin()
 

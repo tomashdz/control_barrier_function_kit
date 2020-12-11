@@ -205,4 +205,3 @@ while (Goal.Gset[0](curr_xr)>0 and i<N-1):
     plt.pause(.00000000001)
 plt.plot(r_x_r[0:i,0],r_x_r[0:i,1],color ="green")
 plt.show()
-

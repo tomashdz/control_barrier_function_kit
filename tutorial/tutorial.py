@@ -7,12 +7,8 @@ import cvxopt as cvxopt
 from picos import Problem, RealVariable, BinaryVariable, Solution
 
 def silly_bug_c(x,goal_x):
-    # Control function
-
-    u = RealVariable("u", (2,1))        # A column vector with 2 elements.
-    s = RealVariable("s")               # A column vector with 2 elements.
-    P = Problem()                       # Initilize picos problem
-        
+    # Control function 
+    
     # Control parameters
     k1 = 0.2
     k2 = 0.2
@@ -20,6 +16,11 @@ def silly_bug_c(x,goal_x):
     # Reference controller
     uref_1 = -k1 * (x[0] - goal_x[0]) - 1 
     uref_2 = -k2 * (x[1] - goal_x[1]) - 1
+
+    # Init optimization 
+    u = RealVariable("u", (2,1))        # A column vector with 2 elements.
+    s = RealVariable("s")               # A column vector with 2 elements.
+    P = Problem()                       # Initilize picos problem
 
     # Optimization problem
     P.set_objective("min", abs(u-[[uref_1],[uref_2]]-s))

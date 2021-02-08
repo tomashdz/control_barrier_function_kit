@@ -24,8 +24,8 @@ def silly_bug_c(x,params):
 
     x_sol = [[0],[0]]
 
-    A = matrix([[0,0,1,0,0],[0,0,0,1,0]])
-    A = A.trans()
+    A = matrix([[0,0,1,0,0],[0,0,0,1,0.]])
+    # A = A.T
 
     b = matrix([[uref_1],[uref_2]],(2,1)) 
 
@@ -46,17 +46,21 @@ def silly_bug_c(x,params):
                 
         #G = np.array([[g1,g2,0,0,-1.],[0,0,-1,0,0],[0,0,0,-1,0],[0,0,0,0,-1]])
         G = matrix([0,0,0,0,-1.])
-        G = G.trans()
+        G = G.T
         
         # h = np.array([0], dtype=float)
         h = matrix([0.],(1,1))
         
         # A = matrix([[g1,g2,0,0,-1.],[0,0,1,0,0],[0,0,0,1,0]])
-        A = matrix([[g1,g2,0,0,-1.],[0,0,1,0,0],[0,0,0,1,0]])
-        # A = np.array([[0,0,1,0,0],[0,0,0,1,0]],dtype=float)
+        new_A_const = matrix([[g1,g2,0,0,-1.]])
+        
+        A = matrix([[A],[new_A_const]])
 
+        # A = np.array([[0,0,1,0,0],[0,0,0,1,0]],dtype=float)
+        new_b_const = matrix([[-g3-g1-g2]])
+        b = matrix([ [b,new_b_const] ])
         # b = matrix([[-g3-g1-g2],[uref_1],[uref_2]],(3,1))
-        b = matrix([[-g3-g1-g2],[uref_1],[uref_2]],(3,1))
+        # b = matrix([[-g3-g1-g2],[uref_1],[uref_2]],(3,1))
         # b = np.array([[uref_1],[uref_2]], dtype=float)
         
         if params['verbose'] == 1:
@@ -69,7 +73,7 @@ def silly_bug_c(x,params):
 
         solvers.options['show_progress'] = False
         solvers.options['max_iter'] = 500
-        sol = cvxopt.solvers.qp(P,q,G,h,A,b)
+        sol = cvxopt.solvers.qp(P,q,G,h,A.T,b)
         x_sol = sol['x']
 
     #return    
@@ -91,6 +95,7 @@ def silly_bug_f(t,x,u,params):
 # Robot Goal
 goal_x = np.array([5,5])
 bad_sets = [[3.,4.,1]]
+# bad_sets = [[3.,4.,1],[4,1,0.5]]
 verbose = 0
 
 # Simulation settings

@@ -15,19 +15,26 @@ def silly_bug_c(x,params):
     bad_sets = params['bad_sets']
 
     # Control parameters
-    k1 = 1
-    k2 = 1
+    k1 = 0.2
+    k2 = 0.2
  
     # Reference controller
-    uref_1 = k1 * ((goal_x[0]-x[0]))
-    uref_2 = k2 * ((goal_x[1]-x[1]))
+    uref_1 = k1 * ((goal_x[0]-x[0])) - 1 
+    uref_2 = k2 * ((goal_x[1]-x[1])) - 1
 
-    x_sol = [[0],[0]]
+    # x_sol = [[0],[0]]
 
     A = matrix([[0,0,1,0,0],[0,0,0,1,0.]])
     # A = A.T
 
     b = matrix([[uref_1],[uref_2]],(2,1)) 
+    
+    P = matrix(np.eye(5))
+    P[0,2] = -2
+    P[1,3] = -2
+    P[4,4] = 0
+    P = .5 * (P + P.T)
+    q = matrix(np.array([0.,0.,0.,0.,0]),(5,1))
 
     # Parameters for the CBF 
     curr_bs = []
@@ -35,33 +42,19 @@ def silly_bug_c(x,params):
         curr_bs = bad_sets[idxi] 
         g1 = 2*x[0]**2 - 2*curr_bs[0]*x[0]
         g2 = 2*x[1]**2 - 2*curr_bs[1]*x[1]
-        g3 = (x[0] - curr_bs[0])**2 + (x[1] - curr_bs[1])**2 - curr_bs[2]
-
-        P = matrix(np.eye(5))
-        P[0,2] = -2
-        P[1,3] = -2
-        P[4,4] = 0
-        P = .5 * (P + P.T)
-        q = matrix(np.array([0.,0.,0.,0.,0]),(5,1))
+        g3 = (x[0] - curr_bs[0])**2 + (x[1] - curr_bs[1])**2 - curr_bs[2]    
                 
-        #G = np.array([[g1,g2,0,0,-1.],[0,0,-1,0,0],[0,0,0,-1,0],[0,0,0,0,-1]])
-        G = matrix([0,0,0,0,-1.])
+        # G = matrix([[-g1,-g2,0,0,1.], [0,0,0,0,-1.] ])
+        G = matrix([ [0,0,0,0,-1.] ])
         G = G.T
         
-        # h = np.array([0], dtype=float)
-        h = matrix([0.],(1,1))
+        h = matrix([ [0.] ],(1,1))
         
-        # A = matrix([[g1,g2,0,0,-1.],[0,0,1,0,0],[0,0,0,1,0]])
         new_A_const = matrix([[g1,g2,0,0,-1.]])
-        
         A = matrix([[A],[new_A_const]])
 
-        # A = np.array([[0,0,1,0,0],[0,0,0,1,0]],dtype=float)
         new_b_const = matrix([[-g3-g1-g2]])
         b = matrix([ [b,new_b_const] ])
-        # b = matrix([[-g3-g1-g2],[uref_1],[uref_2]],(3,1))
-        # b = matrix([[-g3-g1-g2],[uref_1],[uref_2]],(3,1))
-        # b = np.array([[uref_1],[uref_2]], dtype=float)
         
         if params['verbose'] == 1:
             print('P = ', P)
@@ -72,12 +65,16 @@ def silly_bug_c(x,params):
             print('b = ', b)
 
         solvers.options['show_progress'] = False
-        solvers.options['max_iter'] = 500
-        sol = cvxopt.solvers.qp(P,q,G,h,A.T,b)
-        x_sol = sol['x']
-
-    #return    
-    return x_sol[0:2] - np.array([[1],[1]])
+        # solvers.options['max_iter'] = 100
+        # solvers.options['abstol'] = 0.01
+        # solvers.options['reltol'] = 0.01
+        
+    #return  
+    sol = cvxopt.solvers.qp(P,q,G,h,A.T,b)
+    x_sol = sol['x']  
+    # print('x:',x_sol[0:2])
+    # print('***************')
+    return x_sol[0:2] #- np.array([[1],[1]])
     
 
 def silly_bug_f(t,x,u,params):
@@ -94,13 +91,13 @@ def silly_bug_f(t,x,u,params):
 
 # Robot Goal
 goal_x = np.array([5,5])
-bad_sets = [[3.,4.,1]]
-# bad_sets = [[3.,4.,1],[4,1,0.5]]
+bad_sets = [[1.,2.,1]]
+# bad_sets = [[1.,2.,0.5],[4,1,0.5]]
 verbose = 0
 
 # Simulation settings
-T_max = 10     
-n_samples = 50
+T_max = 20
+n_samples = 100
 T = np.linspace(0, T_max, n_samples)
 
 # Initial conditiosn
@@ -111,15 +108,15 @@ nx, ny = 5, 5               # number of initial conditions in each axis
 xx = np.linspace(min_x, max_x, nx)
 yy = np.linspace(min_y, max_y, ny)
 
-xx = [1]
-yy = [3.5]
+# xx = [0]
+# yy = [1]
 
 # xx = [3.2]
 # yy = [2.2]
 
 # System definition using the control toolbox
 silly_bug_sys = control.NonlinearIOSystem(
-    silly_bug_f, None, inputs=None, outputs=None,
+    silly_bug_f, None, inputs=None, outputs=None, dt=None,
     states=('x0', 'x1'), name='silly_bug',params={'goal_x': goal_x, 'bad_sets': bad_sets, 'verbose': verbose})
 
 # Plot
@@ -148,7 +145,7 @@ for idxi, i in enumerate(xx):
         x_0 = np.array([i,k])
         
         # Compute output on the silly bug system for given initial conditions and timesteps T
-        t, y, x = control.input_output_response(sys=silly_bug_sys, T=T, U=0, X0=[i,k], return_x=True)
+        t, y, x = control.input_output_response(sys=silly_bug_sys, T=T, U=0, X0=[i,k], return_x=True, method='BDF')
 
         # Plot initial conditions and path of system
         plt.plot(i,k, 'x-', markersize=5, color=[0,0,0,1])

@@ -34,10 +34,11 @@ def silly_bug_c(x,params):
     # (x0 - u0)^2 + (x1-u1)^2 = x0^2 - 2x0u0 + u0^2 ... 
 
     
-    P = matrix(np.eye(3))
-    P[2,2] = 0
+    P = matrix(np.eye(2))
+    # P[2,2] = 0
     P = .5 * (P + P.T)
-    q = matrix(np.array([-uref_1, -uref_2, 1]),(3,1))
+    # q = matrix(np.array([-uref_1, -uref_2, 1]),(3,1))
+    q = matrix(np.array([-uref_1, -uref_2]),(2,1))
 
     # G = matrix([0,0,0])
     # G = G.T
@@ -48,16 +49,19 @@ def silly_bug_c(x,params):
     curr_bs = []
     for idxi, _ in enumerate(bad_sets):
         curr_bs = bad_sets[idxi]
-        g1 = 2*x[0]**2 - 2*curr_bs[0]*x[0]
-        g2 = 2*x[1]**2 - 2*curr_bs[1]*x[1]
+        g1 = 2*x[0]- 2*curr_bs[0]  #mistake
+        g2 = 2*x[1] - 2*curr_bs[1]   #mistake
         g3 = (x[0] - curr_bs[0])**2 + (x[1] - curr_bs[1])**2 - curr_bs[2]  
-                
+        # mistake: Here adding the slack variable will make the problem unbounded since controls are not bounded. You can choose infinite large values for u 
+        # to get far from unsafe set and make slak variable more negative. So in this problem we do not need this
+        #        
         # G = matrix([[-g1,-g2,0,0,1.], [0,0,0,0,-1.] ])
         
         # ([g1,0]*u + [0,g2]*u >= -1*(g3+s)) the more negative s is, the safer the system is 
         
-        G = matrix([[-g1,-g2,-1.0]])
-        
+        # G = matrix([[-g1,-g2,-1.0]])
+        G = matrix([[-g1,-g2]])
+
         # new_G_const = matrix([[-g1,-g2,-1.]])
         # G = matrix([[G,new_G_const.T]])
 
@@ -111,15 +115,15 @@ n_samples = 100
 T = np.linspace(0, T_max, n_samples)
 
 # Initial conditiosn
-min_x, min_y, max_x, max_y = 0, 0, 4, 4     # min, max of x,y values for initial conditions
-nx, ny = 5, 5               # number of initial conditions in each axis
+min_x, min_y, max_x, max_y = -1, -1, 3, 1    # min, max of x,y values for initial conditions
+nx, ny = 4, 4              # number of initial conditions in each axis
 
 # Vectors of initial conditions in each axis
 xx = np.linspace(min_x, max_x, nx)
 yy = np.linspace(min_y, max_y, ny)
 
-xx = [0]
-yy = [1]
+# xx = [0]
+# yy = [1]
 
 # xx = [3.2]
 # yy = [2.2]

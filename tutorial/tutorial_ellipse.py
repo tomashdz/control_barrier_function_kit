@@ -5,59 +5,65 @@ import cvxopt as cvxopt
 from matplotlib.patches import Ellipse
 import numpy.random as rnd
 
-def inside_ellipse(x,x_e):
-    if ((x[0] - x_e[0])/x_e[2])**2 + ((x[1] - x_e[1])/x_e[3])**2 < 1:
-        return True
+
+def example(i):
+    switcher = {
+        0: [[3., 2., 1., 1.]],
+        1: [[1., 2., 0.5, 0.5], [4., 1., 0.5, 0.5],
+            [3., 2., 0.5, 0.5], [4.5, 4.2, 0.5, 0.5]],
+        2: [[3.5, 1., 0.2, 2.], [2., 2.5, 1., 0.2], [1.5, 1., 0.5, 0.5]]
+    }
+    return switcher.get(i, "Invalid")
+
+
+def is_inside_ellipse(x, x_e):
+    if ((x[0] - x_e[0])/x_e[2])**2 + ((x[1] - x_e[1])/x_e[3])**2 <= 1:
+        return 1
     else:
-        return False
+        return 0
 
-# print( inside_ellipse([3,4],[3,3],1,2) 
 
-def silly_bug_c(x,params):
-    # Control function 
+def silly_bug_c(x, params):
+    # Controller for silly bug
+
     goal_x = params['goal_x']
     bad_sets = params['bad_sets']
+    ctrl_param = params['ctrl_param']
 
-    # Control parameters
-    k1 = 0.3
-    k2 = 0.3
- 
     # Reference controller
-    uref_0 = k1 * ((goal_x[0]-x[0]))
-    uref_1 = k2 * ((goal_x[1]-x[1]))
+    uref_0 = ctrl_param[0] * ((goal_x[0]-x[0]))
+    uref_1 = ctrl_param[1] * ((goal_x[1]-x[1]))
 
-    # Disable cvxopt optimiztaion output
-    cvxopt.solvers.options['show_progress'] = False
-    cvxopt.solvers.options['max_iter'] = 1000
-    
-    # cvxopt quadratic program 
+    ############################
+    # cvxopt quadratic program
     # minimize  0.5 x'Px + q'x
     # s.t       Gx<=h
+    ############################
 
     # P matrix
     P = cvxopt.matrix(np.eye(2))
-    P = .5 * (P + P.T) #symmetric
+    P = .5 * (P + P.T)  # symmetric
 
     # q matrix
-    q = cvxopt.matrix(np.array([-uref_0, -uref_1]),(2,1))
+    q = cvxopt.matrix(np.array([-uref_0, -uref_1]), (2, 1))
 
-    # Parameters for the CBF 
+    # Parameters for the CBF
     G = []
     h = []
 
     # For each bad set, a separate CBF constraint should be added
-    curr_bs = []
     for idxi, _ in enumerate(bad_sets):
         curr_bs = bad_sets[idxi]
-        
-        # Elipse format (x,y,rad_x,rad_y)
-        g1 = (2*x[0] - 2*curr_bs[0])/curr_bs[2] 
-        g2 = (2*x[1] - 2*curr_bs[1])/curr_bs[3] 
-        g3 = ((x[0] - curr_bs[0])/curr_bs[2])**2 + ((x[1] - curr_bs[1])/curr_bs[3])**2 - 1  
-               
-        # ((x[0] - x_e[0])/A)**2 + ((x[1] - x_e[1])/B)**2 < 1:
 
-        G.append([-g1,-g2])
+        # Elipse: curr_bs = (cx,cy,rad_x,rad_y)
+        g1 = 2 * (x[0] - curr_bs[0])/curr_bs[2]**2  # (2*x_0 - cx)/rad_x^2
+        g2 = 2 * (x[1] - curr_bs[1])/curr_bs[3]**2  # (2*x_1 - cy)/rad_y^2
+
+        # ((2*x_0 - cx)/rad_x)^2 + ((2*x_1 - cy)/rad_y)^2 - 1
+        g3 = ((x[0] - curr_bs[0])/curr_bs[2])**2 + \
+            ((x[1] - curr_bs[1])/curr_bs[3])**2 - 1
+
+        G.append([-g1, -g2])
         h.append([g3])
 
     # Convert lists to cvxopt.matrix object
@@ -65,27 +71,31 @@ def silly_bug_c(x,params):
     h = cvxopt.matrix(h)
 
     # Run optimizer and return solution
-    sol = cvxopt.solvers.qp(P,q,G.T,h.T,None,None)
-    x_sol = sol['x']  
+    sol = cvxopt.solvers.qp(P, q, G.T, h.T, None, None)
+    x_sol = sol['x']
     return x_sol[0:2]
 
-def silly_bug_f(t,x,u,params):
-    # a function for a silly bug
-        
-    # compute control given current position
-    u_0 = silly_bug_c(x,params)
 
-    # compute change in xy direction 
+def silly_bug_f(t, x, u, params):
+    # Function for a silly bug
+
+    # compute control given current position
+    u_0 = silly_bug_c(x, params)
+
+    # compute change in xy direction
     dx0 = u_0[0]
     dx1 = u_0[1]
 
     return [dx0, dx1]
 
 # Robot Goal
-goal_x = np.array([5,5])
+goal_x = np.array([5, 5])
+
 # Elipse format (x,y,rad_x,rad_y)
-bad_sets = [[3.5,2.,.2,4], [1.5, 2.5, 2, .5], [1.5, 1, .5, .5]]
-# bad_sets = [[3.5,2.,.2,4], [2, 2.5, 2, .5], [1.5, 1, .5, .5]]
+bad_sets = example(0)
+
+# Parameters for reference controller
+ctrl_param = [0.2, 0.2]
 
 # Simulation settings
 T_max = 20
@@ -93,62 +103,72 @@ n_samples = 100
 T = np.linspace(0, T_max, n_samples)
 
 # Initial conditions
-min_x, min_y, max_x, max_y = 0, 0, 3, 3    # min, max of x,y values for initial conditions
+# min, max of x,y values for initial conditions
+min_x, min_y, max_x, max_y = -1, -1, 3, 3
 nx, ny = 4, 4              # number of initial conditions in each axis
+
+# Uncomment the following for specific intial conditions
+# xx = [0]
+# yy = [0]
 
 # Vectors of initial conditions in each axis
 xx = np.linspace(min_x, max_x, nx)
 yy = np.linspace(min_y, max_y, ny)
 
-# Uncomment the following for specific intial conditions
-xx = [0]
-yy = [0]
-
 # System definition using the control toolbox
 silly_bug_sys = control.NonlinearIOSystem(
     silly_bug_f, None, inputs=None, outputs=None, dt=None,
-    states=('x0', 'x1'), name='silly_bug',params={'goal_x': goal_x, 'bad_sets': bad_sets})
+    states=('x0', 'x1'), name='silly_bug',
+    params={'goal_x': goal_x, 'bad_sets': bad_sets, 'ctrl_param': ctrl_param})
+
+# Disable cvxopt optimiztaion output
+cvxopt.solvers.options['show_progress'] = False
+cvxopt.solvers.options['max_iter'] = 1000
+
+
 
 # Plot
 fig, ax = plt.subplots()
-
-# Plot colors
-jet = plt.get_cmap('jet')
-colors = iter(jet(np.linspace(0,1,len(xx)*len(yy))))
+jet = plt.get_cmap('tab20b')
+colors = iter(jet(np.linspace(0, 1, len(xx)*len(yy))))
 
 # Loop through initial conditions
 for idxi, i in enumerate(xx):
     for idxk, k in enumerate(yy):
-        # If initial condition is inside the bad set, skip it. 
+        # If initial condition is inside the bad set, skip it.
         bool_val = 0
         curr_bs = []
+        
         for idxj, j in enumerate(bad_sets):
             curr_bs = bad_sets[idxj]
-            if inside_ellipse([i,k],bad_sets[idxj]):
-                print('Skip (Invalid):\t',i,k)
+            if is_inside_ellipse([i, k], bad_sets[idxj]):
+                print('Skip (Invalid):\t', i, k)
                 bool_val = 1
         if bool_val == 1:
             continue
 
-        print('Computing:\t',i,k)
-        x_0 = np.array([i,k])
-        
+        print('Computing:\t', i, k)
+        x_0 = np.array([i, k])
+
         # Compute output on the silly bug system for given initial conditions and timesteps T
-        t, y, x = control.input_output_response(sys=silly_bug_sys, T=T, U=0, X0=[i,k], return_x=True, method='BDF')
+        t, y, x = control.input_output_response(sys=silly_bug_sys, T=T, U=0, X0=[
+                                                i, k], return_x=True, method='BDF')
 
         # Plot initial conditions and path of system
-        plt.plot(i,k, 'x-', markersize=5, color=[0,0,0,1])
-        plt.plot(x[0], x[1], 'o-', markersize=2, color=next(colors,[1,1,1,1]))
+        plt.plot(i, k, 'x-', markersize=5, color=[0, 0, 0, 1])
+        plt.plot(x[0], x[1], 'o-', markersize=2,
+                 color=next(colors, [1, 1, 1, 1]))
 
 curr_bs = []
 for idxi, _ in enumerate(bad_sets):
     curr_bs = bad_sets[idxi]
-    ell = Ellipse((curr_bs[0], curr_bs[1]), curr_bs[2], curr_bs[3], color='r')
+    ell = Ellipse((curr_bs[0], curr_bs[1]), 2 *
+                  curr_bs[2], 2 * curr_bs[3], color='r')
     ax.add_patch(ell)
-    
-goal_square = plt.Rectangle(goal_x-np.array([.1,.1]), .2, .2, color='g')
+
+goal_square = plt.Rectangle(goal_x-np.array([.1, .1]), .2, .2, color='g')
 ax.add_patch(goal_square)
 
 plt.xlim(0, 6)
 plt.ylim(0, 6)
-plt.show()  
+plt.show()

@@ -6,24 +6,7 @@ from matplotlib.patches import Ellipse
 import numpy.random as rnd
 
 
-def example(i):
-    switcher = {
-        0: [[3., 2., 1., 1.]],
-        1: [[1., 2., 0.5, 0.5], [4., 1., 0.5, 0.5],
-            [3., 2., 0.5, 0.5], [4.5, 4.2, 0.5, 0.5]],
-        2: [[3.5, 1., 0.2, 2.], [2., 2.5, 1., 0.2], [1.5, 1., 0.5, 0.5]]
-    }
-    return switcher.get(i, "Invalid")
-
-
-def is_inside_ellipse(x, x_e):
-    if ((x[0] - x_e[0])/x_e[2])**2 + ((x[1] - x_e[1])/x_e[3])**2 <= 1:
-        return 1
-    else:
-        return 0
-
-
-def silly_bug_c(x, params):
+def nimble_ant_c(x, params):
     # Controller for silly bug
 
     goal_x = params['goal_x']
@@ -76,11 +59,16 @@ def silly_bug_c(x, params):
     return x_sol[0:2]
 
 
-def silly_bug_f(t, x, u, params):
+def nimble_ant_f(t, x, u, params):
     # Function for a silly bug
 
+    # if goal reached, do nothing
+    goal_x = params['goal_x']
+    if np.linalg.norm(x-goal_x) <= 0.05:
+        return [0, 0]
+
     # compute control given current position
-    u_0 = silly_bug_c(x, params)
+    u_0 = nimble_ant_c(x, params)
 
     # compute change in xy direction
     dx0 = u_0[0]
@@ -88,11 +76,29 @@ def silly_bug_f(t, x, u, params):
 
     return [dx0, dx1]
 
+def example(i):
+    # Examples of different bad sets
+    switcher = {
+        0: [[3., 2., 1., 1.]],
+        1: [[1., 2., 0.5, 0.5], [4., 1., 0.5, 0.5],
+            [3., 2., 0.5, 0.5], [4.5, 4.2, 0.5, 0.5]],
+        2: [[3.5, 1., 0.2, 2.], [2., 2.5, 1., 0.2], [1.5, 1., 0.5, 0.5]],
+        3: [[3.5, 3., 0.2, 2.], [2., 2.5, 1., 0.2], [1.5, 1., 0.5, 0.5]]
+    }
+    return switcher.get(i, "Invalid")
+
+
+def is_inside_ellipse(x, x_e):
+    if ((x[0] - x_e[0])/x_e[2])**2 + ((x[1] - x_e[1])/x_e[3])**2 <= 1:
+        return 1
+    else:
+        return 0
+
 # Robot Goal
 goal_x = np.array([5, 5])
 
 # Elipse format (x,y,rad_x,rad_y)
-bad_sets = example(0)
+bad_sets = example(3)
 
 # Parameters for reference controller
 ctrl_param = [0.2, 0.2]
@@ -117,14 +123,13 @@ yy = np.linspace(min_y, max_y, ny)
 
 # System definition using the control toolbox
 silly_bug_sys = control.NonlinearIOSystem(
-    silly_bug_f, None, inputs=None, outputs=None, dt=None,
+    nimble_ant_f, None, inputs=None, outputs=None, dt=None,
     states=('x0', 'x1'), name='silly_bug',
     params={'goal_x': goal_x, 'bad_sets': bad_sets, 'ctrl_param': ctrl_param})
 
 # Disable cvxopt optimiztaion output
 cvxopt.solvers.options['show_progress'] = False
 cvxopt.solvers.options['max_iter'] = 1000
-
 
 
 # Plot
@@ -138,7 +143,7 @@ for idxi, i in enumerate(xx):
         # If initial condition is inside the bad set, skip it.
         bool_val = 0
         curr_bs = []
-        
+
         for idxj, j in enumerate(bad_sets):
             curr_bs = bad_sets[idxj]
             if is_inside_ellipse([i, k], bad_sets[idxj]):

@@ -63,9 +63,9 @@ def nimble_ant_f(t, x, u, params):
     # Function for a silly bug
 
     # if goal reached, do nothing
-    goal_x = params['goal_x']
-    if np.linalg.norm(x-goal_x) <= 0.05:
-        return [0, 0]
+    # goal_x = params['goal_x']
+    # if np.linalg.norm(x-goal_x) <= 0.05:
+    #     return [0, 0]
 
     # compute control given current position
     u_0 = nimble_ant_c(x, params)
@@ -78,6 +78,7 @@ def nimble_ant_f(t, x, u, params):
 
 def example(i):
     # Examples of different bad sets
+    # The x,y,z,d where x,y represent the center and z,d represents the major, minor axes of the ellipse
     switcher = {
         0: [[3., 2., 1., 1.]],
         1: [[1., 2., 0.5, 0.5], [4., 1., 0.5, 0.5],
@@ -86,7 +87,6 @@ def example(i):
         3: [[3.5, 3., 0.2, 2.], [2., 2.5, 1., 0.2], [1.5, 1., 0.5, 0.5]]
     }
     return switcher.get(i, "Invalid")
-
 
 def is_inside_ellipse(x, x_e):
     if ((x[0] - x_e[0])/x_e[2])**2 + ((x[1] - x_e[1])/x_e[3])**2 <= 1:
@@ -108,6 +108,12 @@ T_max = 20
 n_samples = 100
 T = np.linspace(0, T_max, n_samples)
 
+# System definition using the control toolbox
+silly_bug_sys = control.NonlinearIOSystem(
+    nimble_ant_f, None, inputs=None, outputs=None, dt=None,
+    states=('x0', 'x1'), name='silly_bug',
+    params={'goal_x': goal_x, 'bad_sets': bad_sets, 'ctrl_param': ctrl_param})
+
 # Initial conditions
 # min, max of x,y values for initial conditions
 min_x, min_y, max_x, max_y = -1, -1, 3, 3
@@ -121,12 +127,6 @@ nx, ny = 4, 4              # number of initial conditions in each axis
 xx = np.linspace(min_x, max_x, nx)
 yy = np.linspace(min_y, max_y, ny)
 
-# System definition using the control toolbox
-silly_bug_sys = control.NonlinearIOSystem(
-    nimble_ant_f, None, inputs=None, outputs=None, dt=None,
-    states=('x0', 'x1'), name='silly_bug',
-    params={'goal_x': goal_x, 'bad_sets': bad_sets, 'ctrl_param': ctrl_param})
-
 # Disable cvxopt optimiztaion output
 cvxopt.solvers.options['show_progress'] = False
 cvxopt.solvers.options['max_iter'] = 1000
@@ -138,6 +138,8 @@ jet = plt.get_cmap('tab20b')
 colors = iter(jet(np.linspace(0, 1, len(xx)*len(yy))))
 
 # Loop through initial conditions
+print('Computing trajectories for initial conditions:')
+print('x_0\t x_1')
 for idxi, i in enumerate(xx):
     for idxk, k in enumerate(yy):
         # If initial condition is inside the bad set, skip it.
@@ -152,7 +154,7 @@ for idxi, i in enumerate(xx):
         if bool_val == 1:
             continue
 
-        print('Computing:\t', i, k)
+        print(round(i,2), '\t', round(k,2),"\t... ", end="", flush=True)
         x_0 = np.array([i, k])
 
         # Compute output on the silly bug system for given initial conditions and timesteps T
@@ -163,6 +165,8 @@ for idxi, i in enumerate(xx):
         plt.plot(i, k, 'x-', markersize=5, color=[0, 0, 0, 1])
         plt.plot(x[0], x[1], 'o-', markersize=2,
                  color=next(colors, [1, 1, 1, 1]))
+
+        print("Done")
 
 curr_bs = []
 for idxi, _ in enumerate(bad_sets):

@@ -4,14 +4,44 @@ import control as control
 import cvxopt as cvxopt
 from matplotlib.patches import Ellipse
 import numpy.random as rnd
+from sympy import symbols, Matrix, sin, cos, lambdify, exp, sqrt, log, diff
+
+
+class CBF:
+    def __init__(self, B, g, states, bad_sets):
+        self.B = B
+        self.states = states
+        self.G = []
+        self.h = []
+        self.expr_bs = []
+        self.lamb_G = []
+        for i in self.states:
+            tmp = diff(B*g, i)
+            self.expr_bs.append(tmp)
+            self.lamb_G.append(
+                lambdify([(cx, cy, rad_x, rad_y, xr0, xr1, u)], tmp, "math"))
+        self.lamb_h = lambdify([(cx, cy, rad_x, rad_y, xr0, xr1)], B, "math")
+
+    def compute_G_h(self, x):
+        self.G = []
+        self.h = []
+        for idxi, _ in enumerate(bad_sets):
+            curr_bs = bad_sets[idxi]
+            tmp_g = []
+            self.G.append([])
+            for lamb in self.lamb_G:
+                tmp_g = lamb(tuple(np.hstack((curr_bs, x, 1))))
+                self.G[idxi].append(-1*tmp_g)
+            self.h.append(self.lamb_h(tuple(np.hstack((curr_bs, x)))))
+        return self.G, self.h
 
 
 def nimble_ant_c(x, params):
     # Controller for silly bug
-
     goal_x = params['goal_x']
     bad_sets = params['bad_sets']
     ctrl_param = params['ctrl_param']
+    myCBF = params['myCBF']
 
     # Reference controller
     uref_0 = ctrl_param[0] * ((goal_x[0]-x[0]))
@@ -30,31 +60,13 @@ def nimble_ant_c(x, params):
     # q matrix
     q = cvxopt.matrix(np.array([-uref_0, -uref_1]), (2, 1))
 
-    # Parameters for the CBF
-    G = []
-    h = []
+    G, h = myCBF.compute_G_h(x)
 
-    # For each bad set, a separate CBF constraint should be added
-    for idxi, _ in enumerate(bad_sets):
-        curr_bs = bad_sets[idxi]
-
-        # Elipse: curr_bs = (cx,cy,rad_x,rad_y)
-        g1 = 2 * (x[0] - curr_bs[0])/curr_bs[2]**2  # (2*x_0 - cx)/rad_x^2
-        g2 = 2 * (x[1] - curr_bs[1])/curr_bs[3]**2  # (2*x_1 - cy)/rad_y^2
-
-        # ((2*x_0 - cx)/rad_x)^2 + ((2*x_1 - cy)/rad_y)^2 - 1
-        g3 = ((x[0] - curr_bs[0])/curr_bs[2])**2 + \
-            ((x[1] - curr_bs[1])/curr_bs[3])**2 - 1
-
-        G.append([-g1, -g2])
-        h.append([g3])
-
-    # Convert lists to cvxopt.matrix object
     G = cvxopt.matrix(G)
     h = cvxopt.matrix(h)
 
     # Run optimizer and return solution
-    sol = cvxopt.solvers.qp(P, q, G.T, h.T, None, None)
+    sol = cvxopt.solvers.qp(P, q, G.T, h, None, None)
     x_sol = sol['x']
     return x_sol[0:2]
 
@@ -76,6 +88,7 @@ def nimble_ant_f(t, x, u, params):
 
     return [dx0, dx1]
 
+
 def example(i):
     # Examples of different bad sets
     # The x,y,z,d where x,y represent the center and z,d represents the major, minor axes of the ellipse
@@ -88,11 +101,13 @@ def example(i):
     }
     return switcher.get(i, "Invalid")
 
+
 def is_inside_ellipse(x, x_e):
     if ((x[0] - x_e[0])/x_e[2])**2 + ((x[1] - x_e[1])/x_e[3])**2 <= 1:
         return 1
     else:
         return 0
+
 
 # Robot Goal
 goal_x = np.array([5, 5])
@@ -101,7 +116,17 @@ goal_x = np.array([5, 5])
 bad_sets = example(2)
 
 # Parameters for reference controller
-ctrl_param = [0.2, 0.2]
+ctrl_param = [0.3, 0.3]
+
+
+xr0, xr1, cx, cy, rad_x, rad_y, u = symbols('xr0 xr1 cx cy rad_x rad_y u')
+B = ((xr0 - cx)/rad_x)**2 + ((xr1 - cy)/rad_y)**2 - 1
+g = u
+
+# expr_bs_dx0 = diff(expr_bs,xr0)
+# expr_bs_dx1 = diff(expr_bs,xr1)
+
+myCBF = CBF(B, g, (xr0, xr1), bad_sets)
 
 # Simulation settings
 T_max = 20
@@ -112,7 +137,7 @@ T = np.linspace(0, T_max, n_samples)
 nimble_ant_sys = control.NonlinearIOSystem(
     nimble_ant_f, None, inputs=None, outputs=None, dt=None,
     states=('x0', 'x1'), name='nimble_ant',
-    params={'goal_x': goal_x, 'bad_sets': bad_sets, 'ctrl_param': ctrl_param})
+    params={'goal_x': goal_x, 'bad_sets': bad_sets, 'ctrl_param': ctrl_param, 'myCBF': myCBF})
 
 # Initial conditions
 # min, max of x,y values for initial conditions
@@ -154,7 +179,7 @@ for idxi, i in enumerate(xx):
         if bool_val == 1:
             continue
 
-        print(round(i,2), '\t', round(k,2),"\t... ", end="", flush=True)
+        print(round(i, 2), '\t', round(k, 2), "\t... ", end="", flush=True)
         x_0 = np.array([i, k])
 
         # Compute output on the silly bug system for given initial conditions and timesteps T

@@ -27,7 +27,7 @@ class CBF:
             temp_expr = diff(B, i)
             self.expr_bs.append(temp_expr)
             self.lamb_G.append(
-                lambdify([(cx, cy, rad_x, rad_y, xr0, xr1, u)], temp_expr, "math"))
+                lambdify([(cx, cy, rad_x, rad_y, xr0, xr1)], temp_expr, "math"))
         # function for computation of symbolic expression for h matrix
         self.lamb_h = lambdify([(cx, cy, rad_x, rad_y, xr0, xr1)], B, "math")
 
@@ -50,7 +50,7 @@ class CBF:
             tmp_g = []
             self.G.append([])
             for lamb in self.lamb_G:
-                tmp_g = lamb(tuple(np.hstack((curr_bs, x, 1))))
+                tmp_g = lamb(tuple(np.hstack((curr_bs, x))))
                 self.G[idxi].append(-1*tmp_g)
             self.h.append(self.lamb_h(tuple(np.hstack((curr_bs, x)))))
         return self.G, self.h
@@ -133,7 +133,7 @@ def example(i):
     # Examples of different bad sets
     # The x,y,z,d where x,y represent the center and z,d represents the major, minor axes of the ellipse
     switcher = {
-        0: [[3., 2., 1., 1.]],
+        0: [[3., 3., 1., 1]],
         1: [[1., 2., 0.5, 0.5], [4., 1., 0.5, 0.5],
             [3., 2., 0.5, 0.5], [4.5, 4.2, 0.5, 0.5]],
         2: [[3.5, 1., 0.2, 2.], [2., 2.5, 1., 0.2], [1.5, 1., 0.5, 0.5]],
@@ -170,7 +170,7 @@ g = u
 myCBF = CBF(B, g, (xr0, xr1), bad_sets)
 
 # Simulation settings
-T_max = 20
+T_max = 35
 n_samples = 100
 T = np.linspace(0, T_max, n_samples)
 
@@ -190,8 +190,8 @@ xx = np.linspace(min_x, max_x, nx)
 yy = np.linspace(min_y, max_y, ny)
 
 # Uncomment the following for specific intial conditions
-# xx = [0]
-# yy = [0]
+xx = [0]
+yy = [0]
 
 # Disable cvxopt optimiztaion output
 cvxopt.solvers.options['show_progress'] = False

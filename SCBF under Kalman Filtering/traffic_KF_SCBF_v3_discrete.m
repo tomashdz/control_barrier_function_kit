@@ -11,13 +11,13 @@ plotit = 1;
 SaveVideo = 0;
 
 % Others:
-U = [0 2 ; -pi/6 pi/6];   % v>=0, but angular velocity can be negative
+U = [0.2 2 ; -pi/6 pi/6];   % v>=0, but angular velocity can be negative
 T = 1;  % Time Horizon
 SimTime = 25;  % Maximum Simulation Time
 u1d = 1.5; % desired speed
 % Initial conditions:
 x_r = [0 ; 0; 0]; % ego car
-x_o = {[-7;1;u1d+0.1*randn],[-5;1;u1d+0.1*randn],[-1; 1;u1d+0.1*randn] ,[2.5;1;u1d+0.1*randn],[5.5;1;u1d+0.1*randn] ,[-10;2;u1d+0.1*randn],  [-7;2;u1d+0.1*randn], [-1;2;u1d+0.1*randn], [0.45;2;u1d+0.1*randn], [5;2;u1d+0.1*randn], [-2;0;u1d+0.1*randn], [3;0;u1d+0.1*randn], [-.5; 3;u1d+0.1*randn], [3;3;u1d+0.1*randn],[-4;3;u1d+0.1*randn]}; %traffic participants
+x_o = {[-7;1;u1d+0.1*randn],[-5;1;u1d+0.1*randn],[-1.5; 1;u1d+0.1*randn] ,[2.5;1;u1d+0.1*randn],[5.5;1;u1d+0.1*randn] ,[-10;2;u1d+0.1*randn],  [-7;2;u1d+0.1*randn], [-2;2;u1d+0.1*randn], [0.8;2;u1d+0.1*randn], [5;2;u1d+0.1*randn], [-3;0;u1d+0.1*randn], [1.7;0;u1d+0.1*randn], [0.1; 3;u1d+0.1*randn], [3;3;u1d+0.1*randn],[-4;3;u1d+0.1*randn]}; %traffic participants
 
 %% Ego and trrafic participant models
 
@@ -31,7 +31,7 @@ l = 0.01;
 Real_x_r = @(x_r) x_r-l*[cos(x_r(3)); sin(x_r(3)); 0];
 
 f_r = [0 ;0 ; 0];
-f_o = @(x_o,x_r) [x_o(3); 0; u1d+(x_o(1)-x_r(1))*exp(-10*((x_o(1)-x_r(1))^2+(x_o(2)-x_r(2))^2))-x_o(3)];
+f_o = @(x_o,x_r) [x_o(3); 0; u1d+ (x_o(1)-x_r(1))*exp(11-10*((x_o(1)-x_r(1))^2+(x_o(2)-x_r(2))^2))-x_o(3)];
 g_r = @(x_r) [cos(x_r(3)) -l*sin(x_r(3)); sin(x_r(3)) l*cos(x_r(3)); 0 1]; 
 F_r = @(x,u) f_r + g_r(x)* [u(1); u(2)];
 g_o = [0 ;0 ; 0];
@@ -41,10 +41,10 @@ F_o_s = F_o(x_o_s,x_r_s);
 
 
 C = eye(length(x_r_s));
-% C = C(1:end-1,:);
+C = C(1:end-1,:);
 
 G = 0.1*eye(3);
-D = 0.1*eye(size(C,2));
+D = 0.1*eye(size(C,1));
 R = D*D';
 Q = G*G'; 
 
@@ -69,7 +69,7 @@ A_s = jacobian(F_o_s, x_o_s);
 
 p = 0.1*ones(length(x_o),1);  % desired risks
 pe = p/2;
-err0 = 0.1;
+err0 = 0.2;
 err = [];
 for i =1:length(x_o)
     Pmax = norm(P{i}); Pmin = .1;
@@ -77,13 +77,13 @@ for i =1:length(x_o)
 end
 
 GoalCenter = [10 ; 3];
-r = 0.5*ones(length(x_o),1);   % same radius for all obstacles
-rG = 0.1^2;
+radi = 0.25*ones(length(x_o),1);   % same radius for all obstacles
+rG = 0.15^2;
 gamma = 5;  % CBF constant 
 Unsafes = cell(length(x_o),1);
 % The following loop froms the functions needed for formulating the CBF constarins 
 for i = 1:length(Unsafes)
-    Unsafes{i} = @(x_r, x_o) (x_r(1)-x_o(1))^2+(x_r(2)-x_o(2))^2-(r(i)+l)^2;
+    Unsafes{i} = @(x_r, x_o) (x_r(1)-x_o(1))^2+(x_r(2)-x_o(2))^2-(radi(i)+l)^2;
     CBF{i} = @(x_r,x_o) exp(-gamma* Unsafes{i}(x_r,x_o));
     CBFder = vpa(jacobian(CBF{i}(x_r_s,x_o_s),[x_r_s x_o_s]));
     CBF2der = vpa(jacobian(CBFder(length(x_r_s)+1:end), x_o_s));
@@ -154,6 +154,8 @@ GoalderFunc = str2func(['@(x_r,u) ' str1]);
 dt = 0.01;
 N = SimTime/dt;
 for i = 1:length(x_o)
+    W{i} = randn(length(x_o_s),N);
+    v{i} = randn(size(C,1),N);
     dW{i} = sqrt(dt)*randn(length(x_o_s),N);   % increments
     dv{i} = sqrt(dt)*randn(size(C,1),N);
 end
@@ -161,7 +163,7 @@ end
 %% Quadratic Programs
 
 i = 0;
-UnsafeRadius = -2;
+UnsafeRadius = 2;
 
 curr_xr = x_r;
 curr_xo = x_o;
@@ -170,7 +172,7 @@ curr_P = P;
 
 if plotit
     figure(1)
-    axis([-0.5 25 -0.55 3.55])
+    axis([-0.5 24 -0.55 3.55])
     set(gcf,'Position',[200 300 1500 300])
     hold on;
     plotReachAvoidSets(Goal,Road,x_r_s)
@@ -178,9 +180,9 @@ end
 uq = [];
 fid = 0;
 UnsafeLists = [];
+flag = 0;
+while (Goal(curr_xr)>-rG+l^2 || curr_xr(3)>0.1) && i<N  % Solve the quadratic programs (QP) at each iteration to find an optimal risk bounded control until reaching the goal set    
 
-while Goal(curr_xr)>-rG+l^2 && i<N  % Solve the quadratic programs (QP) at each iteration to find an optimal risk bounded control until reaching the goal set    
-    
     i = i+1;
     UnsafeList = [];
     Dist = [];
@@ -195,19 +197,43 @@ while Goal(curr_xr)>-rG+l^2 && i<N  % Solve the quadratic programs (QP) at each 
     A = [];
     b =[];
     H = [];
-    ff = [];
+    ff = zeros(length(u_s)+2*length(UnsafeList)+1,1);
+    % u1 close to u1d is prefered but we don't want to change u1 too fast:
+    if i >1
+        if uq(1)>u1d
+            ui = max(u1d,uq(1)-0.2);
+        else
+            ui = min(u1d,uq(1)+0.2);
+        end
+    else
+        ui = u1d;
+    end
+    ff(1) = -5*u1d;
+    ff(2) = 0.5*0.5*curr_xr(3); 
+    ff(end) = 2;
+
     for j = 1:length(UnsafeList)
         % CBF Constraints (Eq (15))
-        A(2*j-1,[1:length(u_s) length(u_s)+j]) = [multCondFun{UnsafeList(j)}(curr_xr,  curr_xohat{UnsafeList(j)},[1 0]) multCondFun{UnsafeList(j)}(curr_xr,  curr_xohat{UnsafeList(j)},[0 1]) -1]; % multiplier of u , bi
+        A(2*j-1,[1:length(u_s) length(u_s)+2*j-1:length(u_s)+2*j]) = [multCondFun{UnsafeList(j)}(curr_xr,  curr_xohat{UnsafeList(j)},[1 0]) multCondFun{UnsafeList(j)}(curr_xr,  curr_xohat{UnsafeList(j)},[0 1]) -1 0]; % multiplier of u , bi, s
         b(2*j-1) = -ai* CBF{UnsafeList(j)}(curr_xr,  curr_xohat{UnsafeList(j)})- ConstCondFun{UnsafeList(j)}(curr_xr, curr_xohat{UnsafeList(j)}, P{UnsafeList(j)}(:,:,i), err{UnsafeList(j)}(i));
         % Constraints on bi to satisfy pi risk  (Eq(17))
-        A(2*j,length(u_s)+j) = 1;
-        b(2*j) = min(ai, -1/T*log((1-p(UnsafeList(j)))/(1-CBF{UnsafeList(j)}(curr_xr,  curr_xohat{UnsafeList(j)}))));
+        A(2*j,length(u_s)+2*j-1:length(u_s)+2*j) = [1 -1];
+        pnew = (p(UnsafeList(j))- pe(UnsafeList(j)))/(1-pe(UnsafeList(j)));
+        b(2*j) = min(ai, -1/T*log((1-pnew)/(1-CBF{UnsafeList(j)}(curr_xr,  curr_xohat{UnsafeList(j)}))));
+        A(2*j+1,length(u_s)+2*j) = -1;
+        b(2*j+1) = 0;        
+        ff(length(u_s)+2*j-1:length(u_s)+2*j) = [100 10000];
     end
+%         A[2*j+1,len(u_s)+2*j] = 1; A[2*j+1,len(u_s)+2*j+1] = -1
+%     if Unsafe.CBF(x_r, x_o[UnsafeList[j]][0:2])<1:
+%             b[2*j+1] = min(ai, -1/T*log((1-risk)/(1-Unsafe.CBF(x_r, x_o[UnsafeList[j]][0:2]))))
+%     else:
+%             b[2*j+1] = 0
     
     % Adding U constraint
-    A(end+1,1) = 1; b(end+1) = U(1,2);
-    A(end+1,1) = -1;  b(end+1) = -U(1,1);
+    A(end+1,1) = 1;
+    b(end+1) = U(1,2);
+    A(end+1,1) = -1; b(end+1) = -U(1,1);
     A(end+1,2) = 1; b(end+1) = U(2,2);
     A(end+1,2) = -1; b(end+1) = -U(2,1);
     
@@ -215,28 +241,19 @@ while Goal(curr_xr)>-rG+l^2 && i<N  % Solve the quadratic programs (QP) at each 
     A(end+1,1:2) = [GoalderFunc(curr_xr,[1 0]) GoalderFunc(curr_xr,[0 1])] ;
     A(end,end+1) = -1;
     b(end+1) = 0;
-    A(end+1,end) = 1;
-    b(end+1) = eps;
+%     A(end+1,end) = 1;
+%     b(end+1) = eps;
     
-    H = [zeros(length(u_s)+length(UnsafeList)+1)];  % u1, u2 , bi for obstacles, delta (for lyapunov)
-    H(1,1) = 10;
+    H = [zeros(length(u_s)+2*length(UnsafeList)+1)];  % u1, u2 , bi, s for obstacles, delta (for lyapunov)
+    H(1,1) = 5;
     H(2,2) = 0.5;
     
-    ff = zeros(length(u_s),1);
-    ff(length(u_s)+1:length(u_s)+length(UnsafeList)) = 100;
-    % u1 close to u1d is prefered but we don't want to change u1 too fast:
-    if i >1
-        if uq(1)>u1d
-            ui = max(u1d,uq(1)-0.1);
-        else
-            ui = min(u1d,uq(1)+0.1);
-        end
-    else
-        ui = u1d;
+    if Goal(curr_xr)<=rG || flag
+        flag = 1;
+        ff(2) = 0.5*10*curr_xr(3); 
     end
-    ff(1) = -10*ui;
-    ff(2) = 0.5*0.1*curr_xr(3);
-    ff(end+1) = 1;
+
+    
     
     [uq,fval,exitflag,output]= quadprog(H, ff, A, b,[],[],[],[],[],options);
     if ~(exitflag==1)
@@ -257,8 +274,10 @@ while Goal(curr_xr)>-rG+l^2 && i<N  % Solve the quadratic programs (QP) at each 
     if length(uq)>3
         [bmax(i), j] = max(uq(3:end-1));
         r = [];
-        for k = 1:length(uq)-3
-            r(k) = max(0,1-(1-CBF{UnsafeList(k)}(curr_xr,  x_o{UnsafeList(k)}(:,i)))*exp(-uq(k+2)*T));
+        for k = 1:(length(uq)-3)/2
+%             r(k) = max(0,1-(1-CBF{UnsafeList(k)}(curr_xr,  x_o{UnsafeList(k)}(:,i)))*exp(-sum(uq(2*k+1:2*k+2))*T));
+            B0 = CBF{UnsafeList(k)}(curr_xr,  x_o_hat{UnsafeList(k)}(:,i));
+            r(k) = max(0,(1-pe(UnsafeList(k)))*(1-(1-B0)*exp(-sum(uq(2*k+1:2*k+2))*T))+pe(UnsafeList(k)));
         end
         risk(i) = max(r(k));
     else
@@ -269,30 +288,31 @@ while Goal(curr_xr)>-rG+l^2 && i<N  % Solve the quadratic programs (QP) at each 
     delta(i) = uq(end); % Lyapunov slack variable
     curr_u = uq(1:length(u_s)); % Control actions
     uq_b = uq;
-    u_r(:,i) = curr_u;
+    u_r(:,i) = curr_u;        
     
-    
-    % actual x's, estimates
-    for j = 1:length(x_o)
-        curr_xo{j} = curr_xo{j} + F_o(curr_xo{j},curr_xr)*dt + G*dW{j}(:,i);
-        x_o{j}(:,i+1) = curr_xo{j};
-        
+        % actual x's, estimates
+    for j = 1:length(x_o)             
         x_o_hat_pred = curr_xohat{j} + F_o(curr_xohat{j},curr_xr)*dt ;
         At = Afunc(curr_xr,x_o_hat_pred);
-        P_pred = (eye(3)+At*dt)*curr_P{j}*(eye(3)+At*dt)'+Q; 
         
-        dy = C*curr_xo{j}*dt + D*dv{j}(:,i);
-        y{j}(:,i+1) = y{j}(:,i) + dy;
-        ythild = y{j}(:,i+1) - C*x_o_hat_pred;
+        P_pred = (eye(3)+At*dt)*curr_P{j}*(eye(3)+At*dt)'+Q;
+        
         S = C*P_pred*C' + R;
-        Kt = P_pred*C'/S;
+        Kt = P_pred*C'/S;        
+        
+        yhat = C*x_o_hat_pred;
+        y{j}(:,i+1) = C*curr_xo{j} + D*v{j}(:,i);
+        ythild = y{j}(:,i+1) - yhat;
         
         curr_xohat{j} = x_o_hat_pred + Kt*ythild; 
         x_o_hat{j}(:,i+1) = curr_xohat{j};
         
+        
         curr_P{j} = P_pred - Kt*C*P_pred; 
         P{j}(:,:,i+1) = curr_P{j};
         
+        curr_xo{j} = curr_xo{j} + F_o(curr_xo{j},curr_xr)*dt + dt*G*W{j}(:,i);
+        x_o{j}(:,i+1) = curr_xo{j};
     end
     curr_xr = curr_xr + F_r(curr_xr,curr_u)*dt;
     x_r(:,i+1) = curr_xr;
@@ -300,28 +320,41 @@ while Goal(curr_xr)>-rG+l^2 && i<N  % Solve the quadratic programs (QP) at each 
     % error update    
     for ii =1:length(x_o)
         Pmax = norm(curr_P{ii}); Pmin = .1;
-        err{ii}(i+1) = sqrt(Pmax*err0^2/(Pmin*pe(ii)));
+        err{ii}(i+1) = err{ii}(i); %sqrt(Pmax*err0^2/(Pmin*pe(ii)));
     end
     
     
     r_x_r(:,i+1) = Real_x_r(curr_xr);  % States in original coordiantes 
     % Plotting
-    if plotit && rem(i,10)==1
+    if plotit && rem(i,20)==1
         if i>1
             set(rob,'Visible','off')
             for io = 1:length(x_o)
                 set(ob{io},'Visible','off')
             end
+            if exist('obe')
+                for io = 1:length(obe)
+                    set(obe{io},'Visible','off')
+                end
+            end
         end
         args = {'LineWidth', 2};
-        rob = plot(r_x_r(1,i),r_x_r(2,i),'o','color','b','markerfacecolor', 'b', args{:});
+        rob = draw_rectangle(r_x_r(1:2,i),.25,.2,r_x_r(3,i)*180/pi,'b','b');
+        for io = 1:length(UnsafeList)    
+            obe{io} = draw_rectangle(x_o{UnsafeList(io)}(1:2,i),.25+norm(x_o{UnsafeList(io)}(1,i)-x_o_hat{UnsafeList(io)}(1,i)),.2+norm(x_o{UnsafeList(io)}(2,i)-x_o_hat{UnsafeList(io)}(2,i)),0,'yellow','None');
+        end
         for io = 1:length(x_o)
-            ob{io} = plot(x_o{io}(1,i),x_o{io}(2,i),'o','color','r','markerfacecolor', 'r', args{:});
+            ob{io} = draw_rectangle(x_o{io}(1:2,i),.25,.2,0,'red','red');
         end
         fid = fid+1;
         F(fid) = getframe;
         drawnow
     end
+    
+        
+
+
+    
 end
 %% Post Processing
 
@@ -334,11 +367,12 @@ figure(2);ax = subplot(4,1,1);plot(0:dt:(i-1)*dt, u_r(1,:)); ylabel('u(1)','inte
 figure(2);ax = subplot(4,1,2);plot(0:dt:(i-1)*dt, u_r(2,:)); ylabel('u(2)','interpreter','latex','fontsize',14); xlim([0,16.2]);grid on;ax.FontSize = 10; 
 figure(2);ax = subplot(4,1,3);plot(0:dt:(i-1)*dt, risk); ylabel('$\max_i(\bar p_i^B)$','interpreter','latex','fontsize',14); xlim([0,16.2]);grid on;ax.FontSize = 10; 
 figure(2);ax = subplot(4,1,4); plot(0:dt:(i-1)*dt, minDist); ylabel('$\min_i(h_i(\tilde{x}_i))$','interpreter','latex','fontsize',14); xlim([0,16.2]);xlabel('time (s)','interpreter','latex','fontsize',12);grid on; ax.FontSize = 10; 
+figure(2);ax = subplot(4,1,4); plot(0:dt:(i)*dt, x_o{1}-x_o_hat{1}); ylabel('$\min_i(h_i(\tilde{x}_i))$','interpreter','latex','fontsize',14); xlim([0,16.2]);xlabel('time (s)','interpreter','latex','fontsize',12);grid on; ax.FontSize = 10; 
 
 % Video saving
 if SaveVideo
     writerObj = VideoWriter('test3.avi'); %Attempt to create an avi
-    writerObj.FrameRate = 10;
+    writerObj.FrameRate = 15;
     open(writerObj);
     for t= 1:fid
         
@@ -378,4 +412,27 @@ fun = char(expand(vpa((Goal(x_r_s)))));
 str = regexprep(fun,matchPattern,replacePattern);
 str = sprintf('@(%s1,%s2) %s', 'x_r', 'x_r', str);
 fimplicit(str2func(str), args{:},'MeshDensity',100);
+end
+function out = draw_rectangle(center_location,L,H,deg,rgb,rgbface)
+    theta=deg*pi/180;
+    center1=center_location(1);
+    center2=center_location(2);
+    R= ([cos(theta), -sin(theta); sin(theta), cos(theta)]);
+    X=([-L/2, L/2, L/2, -L/2]);
+    Y=([-H/2, -H/2, H/2, H/2]);
+    for i=1:4
+    T(:,i)=R*[X(i); Y(i)];
+    end
+    x_lower_left=center1+T(1,1);
+    x_lower_right=center1+T(1,2);
+    x_upper_right=center1+T(1,3);
+    x_upper_left=center1+T(1,4);
+    y_lower_left=center2+T(2,1);
+    y_lower_right=center2+T(2,2);
+    y_upper_right=center2+T(2,3);
+    y_upper_left=center2+T(2,4);
+    x_coor=[x_lower_left x_lower_right x_upper_right x_upper_left];
+    y_coor=[y_lower_left y_lower_right y_upper_right y_upper_left];
+    out = patch('Vertices',[x_coor; y_coor]','Faces',[1 2 3 4],'Edgecolor',rgb,'Facecolor',rgbface,'Linewidth',1.2);
+    axis equal;
 end

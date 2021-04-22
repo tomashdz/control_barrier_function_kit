@@ -13,20 +13,25 @@ import math
 class CBF:
     def __init__(self, B, f, g, states, bad_sets, states_dot):
         self.B = B
+        self.B_d = []
         self.states = states
         self.G = []
         self.h = []
         self.expr_bs = []
         self.lamb_G = []
 
+        a1 = 7
+        a2 = 10
+
         expr = self.get_expr(B, f, g, states, states_dot)
 
         G, h = self.decompose_G_h(expr[0], g, states_dot)
         self.lamb_G.append(
-            lambdify([(cx, cy, rad_x, rad_y, xr0, xr1, xr2)], G, "math"))
-
+            lambdify([(cx, cy, rad_x, rad_y, xr0, xr1, xr2)], -1 * G, "math"))
+#!  h+B is incorrect when second order system,
         self.lamb_h = lambdify(
-            [(cx, cy, rad_x, rad_y, xr0, xr1, xr2)], (h+B), "math")
+            # [(cx, cy, rad_x, rad_y, xr0, xr1, xr2)], (h+B), "math")
+            [(cx, cy, rad_x, rad_y, xr0, xr1, xr2)], (a1 * self.B_d[0][0] + a2 * B), "math")
 
     def compute_G_h(self, x):
         self.G = []
@@ -47,6 +52,7 @@ class CBF:
             B_dot_var.append(diff(B, i))
         B_dot = Matrix(B_dot_var)
         B_dot_f = B_dot.T * states_dot
+        self.B_d.append(B_dot_f)
         if (g.T * states_dot)[0] in B_dot_f.free_symbols:  #! This needs to be revised
             return B_dot_f
         else:
@@ -64,7 +70,7 @@ class CBF:
 
 
 def nimble_car_c(x, params):
-    # Controller for silly bug
+    # Controller for nimble car
     goal_x = params['goal_x']
     bad_sets = params['bad_sets']
     ctrl_param = params['ctrl_param']
@@ -81,7 +87,6 @@ def nimble_car_c(x, params):
     # minimize  0.5 x'Px + q'x
     # s.t       Gx<=h
     ############################
-
     # P matrix
     P = cvxopt.matrix(np.eye(1))
     # P = .5 * (P + P.T)  # symmetric
@@ -93,12 +98,16 @@ def nimble_car_c(x, params):
 
     G = cvxopt.matrix(G)
     h = cvxopt.matrix(h)
-    print(' ')
 
     # Run optimizer and return solution
-    sol = cvxopt.solvers.qp(P, q, G.T, h, None, None)
-    x_sol = sol['x']
-    print(x, ' G: ', G, ' h: ', h, ' x_sol: ', x_sol)
+    # sol = cvxopt.solvers.qp(P, q, G.T, h, None, None)
+    try:
+        sol = cvxopt.solvers.qp(P, q, G.T, h, None, None)
+        x_sol = sol['x']
+    except:
+        x_sol = [0]
+        print("bad")
+    # print(x, ' G: ', G, ' h: ', h, ' x_sol: ', x_sol)
     return x_sol[0:1]
 
 
@@ -107,7 +116,7 @@ def nimble_car_f(t, x, u, params):
 
     # if goal reached, do nothing
     goal_x = params['goal_x']
-    if np.linalg.norm(x[0:2]-goal_x) <= 0.05:
+    if np.linalg.norm(x[0:2]-goal_x) <= 0.1:
         return [0, 0, 0]
 
     # compute control given current position
@@ -140,22 +149,20 @@ def is_inside_ellipse(x, x_e):
     else:
         return 0
 
-
 # Robot Goal
 goal_x = np.array([5, 5])
 
 # Elipse format (x,y,rad_x,rad_y)
-bad_sets = example(0)
+bad_sets = example(1)
 
 # Parameters for reference controller
-ctrl_param = [10]
-
+ctrl_param = [1]
 
 xr0, xr1, xr2, cx, cy, rad_x, rad_y, xr2_dot, u = symbols(
     'xr0 xr1 xr2 cx cy rad_x rad_y xr2_dot u')
 
-# B = ((xr0 - cx)/rad_x)**2 + ((xr1 - cy)/rad_y)**2 - 1
-B = (xr0 - 3)**2 + (xr1 - 2)**2 - 1
+B = ((xr0 - cx)/rad_x)**2 + ((xr1 - cy)/rad_y)**2 - 1
+# B = (xr0 - cx)**2 + (xr1 - cx)**2 - 1
 f = Matrix([cos(xr2), sin(xr2), 0])
 g = Matrix([0, 0, 1])
 states_dot = Matrix([cos(xr2), sin(xr2), xr2_dot])
@@ -186,8 +193,8 @@ xx = np.linspace(min_x, max_x, nx)
 yy = np.linspace(min_y, max_y, ny)
 
 #? Uncomment the following for specific intial conditions
-xx = [1]
-yy = [1]
+xx = [0.5]
+yy = [0.5]
 
 # Disable cvxopt optimiztaion output
 cvxopt.solvers.options['show_progress'] = False

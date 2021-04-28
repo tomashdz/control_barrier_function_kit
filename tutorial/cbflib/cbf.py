@@ -51,7 +51,9 @@ class CBF:
             tmp_g = []
             self.G.append([])
             for lamb in self.lamb_G:
-                tmp_g = lamb(tuple(np.hstack((x, curr_bs))))
+                # tmp_g = lamb(tuple(np.hstack((x, curr_bs))))
+                tmp_g = lamb(tuple(np.hstack((x, curr_bs[2:4]))))
                 self.G[idxi].append(-1*tmp_g)
-            self.h.append(self.lamb_h(tuple(np.hstack((x, curr_bs)))))
+            self.h.append(self.lamb_h(tuple(np.hstack((x, curr_bs[2:4])))))
+            # self.h.append(self.lamb_h(tuple(np.hstack((x, curr_bs)))))
         return self.G, self.h

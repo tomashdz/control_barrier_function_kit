@@ -9,7 +9,7 @@ from cbflib import cbf, cbf_utils, sys_and_ctrl
 x_goal = np.array([5, 5])
 
 # Elipse format (x,y,rad_x,rad_y)
-bad_sets = cbf_utils.example(2)
+bad_sets = cbf_utils.example(0)
 
 # Parameters for reference controller
 ctrl_param_k = [0.3, 0.3]
@@ -63,8 +63,8 @@ xx = np.linspace(min_x, max_x, nx)
 yy = np.linspace(min_y, max_y, ny)
 
 # Uncomment the following for specific intial conditions
-xx = [0]
-yy = [0]
+xx = [0.5]
+yy = [1.5]
 
 # Disable cvxopt optimiztaion output
 cvxopt.solvers.options['show_progress'] = False
@@ -95,7 +95,7 @@ for idxi, i in enumerate(xx):
         x_0 = np.array([i, j])
 
         # Compute output on the nimble ant system for given initial conditions and timesteps T
-        t, y, x = control.input_output_response(sys=nimble_ant_closed, T=T, U=0, X0=[
+        t, y, x = control.input_output_response(sys=nimble_ant_closed, T=T, X0=[
                                                 i, j], return_x=True, method='BDF')
 
         # Plot initial conditions and path of system

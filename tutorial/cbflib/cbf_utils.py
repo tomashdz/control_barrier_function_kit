@@ -2,6 +2,19 @@ from matplotlib.patches import Ellipse
 import matplotlib.pyplot as plt
 import numpy as np
 
+class Obstacle:
+    def __init__(self, xo_0, xo_1, a, b, type):
+        """ Obstacle as an ellipse
+        Args: where z_0, z_1 represent the center and a, b represents the major, minor axes of the ellipse
+            xo_0, xo_1:   center of ellipse
+            a, b:   major and minor axes
+            dynamic: equal to 1 if obstacle is dynamic
+        """
+        self.xo_0 = xo_0
+        self.xo_1 = xo_1
+        self.a = a
+        self.b = b
+        self.type = type.lower()
 
 def example(i):
     # Examples of different bad sets as ellipses
@@ -12,7 +25,8 @@ def example(i):
             [3., 2., 0.5, 0.5], [4.5, 4.2, 0.5, 0.5]],
         2: [[3.5, 1., 0.2, 2.], [2., 2.5, 1., 0.2], [1.5, 1., 0.5, 0.5]],
         3: [[3.5, 3., 0.2, 2.], [2., 2.5, 1., 0.2], [1.5, 1., 0.5, 0.5]],
-        4: [[10, 3.5, 2, 1]]
+        4: [[10, 3.5, 3, 2]],
+        5: [[10, 3.5, 5, 4]]
     }
     return switcher.get(i, "Invalid")
 

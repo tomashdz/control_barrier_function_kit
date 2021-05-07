@@ -81,30 +81,30 @@ def plottrajs(trajs):
         plt.plot([1.3,7],[-1.5,-1.5],color ="black")
         for j in range(len(trajs.hsr)):
                 plt.axis([-10,10,-10,10])
-                plt.plot(trajs.hsr[j][1],-trajs.hsr[j][0],color ="green",marker = 'o')               
+                plt.plot(trajs.hsr[j][1],-trajs.hsr[j][0],color ="green",marker = 'o',markersize=2)               
                 for k in range(len(trajs.actors[j])):
-                        plt.plot(trajs.actors[j][k][1],-trajs.actors[j][k][0],color ="red",marker = 'o')
+                        plt.plot(trajs.actors[j][k][1],-trajs.actors[j][k][0],color ="red",marker = 'o',markersize=2)
         plt.draw()
         plt.pause(np.finfo(float).eps)
         plt.ioff()
 
 
-        fig, axs = plt.subplots(3)
-        axs[0].set_title('controls: velocity (green), angular velocity (red)')
+        fig, axs = plt.subplots(4)
+        axs[0].set(ylabel = 'velocity input')
         # axs[1].set_title('risk')
         # axs[2].set_title('min Dist')
-        axs[0].set(ylabel = 'controls')
-        axs[1].set(ylabel = 'risk')
-        axs[2].set(xlabel = 'time', ylabel = 'min Dist')
+        axs[1].set(ylabel = 'angular velocity input')
+        axs[2].set(ylabel = 'risk')
+        axs[3].set(xlabel = 'time', ylabel = 'min Dist')
 
         for k in range(len(trajs.time)):
-                axs[0].plot(trajs.time[k], trajs.commands[k][0],color ="green",marker = 'o')
-                axs[0].plot(trajs.time[k], trajs.commands[k][1],color ="red",marker = 'o')
+                axs[0].plot(trajs.time[k], trajs.commands[k][0],color ="green",marker = 'o',markersize=2)
+                axs[1].plot(trajs.time[k], trajs.commands[k][1],color ="green",marker = 'o',markersize=2)
                 if trajs.risk[k]<risk:
-                        axs[1].plot(trajs.time[k], trajs.risk[k],color ="green",marker = 'o')
+                        axs[2].plot(trajs.time[k], trajs.risk[k],color ="green",marker = 'o',markersize=2)
                 else:
-                        axs[1].plot(trajs.time[k], trajs.risk[k],color ="red",marker = 'o')
-                axs[2].plot(trajs.time[k], trajs.minDist[k],color ="green",marker = 'o')
+                        axs[2].plot(trajs.time[k], trajs.risk[k],color ="red",marker = 'o',markersize=2)
+                axs[3].plot(trajs.time[k], trajs.minDist[k],color ="green",marker = 'o',markersize=2)
 
 
         plt.draw()
@@ -143,8 +143,8 @@ class robot(object):
                 # Obstacle SDE, not needed if we want to use Keyvan prediction method
                 self.f_o = self.u_o
                 # self.f_o = Matrix([0.1, 0.1])
-                self.g_o = Matrix([0.2, 0.2])
-
+                self.g_o = Matrix([0.1, 0.1])
+                self.g_o = 0.1*self.u_o
                 # self.f_o_fun = lambdify([self.x_o_s], self.f_o)
                 # self.g_o_fun = lambdify([self.x_o_s], self.g_o)
         
@@ -337,9 +337,10 @@ class CBF_CONTROLLER(object):
                 x_r = np.array(self.trajs.hsr[len(self.trajs.hsr)-1])
                 x_o = np.array(self.trajs.actors[len(self.trajs.actors)-1])
                 u_s = self.robot.u_s
-                if self.count>2:
-                        x_o_pre = np.array(self.trajs.actors[len(self.trajs.actors)-3])
-                        dt = self.trajs.time[len(self.trajs.time)-1]-self.trajs.time[len(self.trajs.time)-3]
+                if self.count>3:
+                        x_o_pre = np.array(self.trajs.actors[len(self.trajs.actors)-4])
+                        # x_o_2pre = np.array(self.trajs.actors[len(self.trajs.actors)-3])
+                        dt = self.trajs.time[len(self.trajs.time)-1]-self.trajs.time[len(self.trajs.time)-4]
                         u_o = (x_o[:,0:2]-x_o_pre[:,0:2])/dt
                 else:
                         u_o = np.zeros((len(x_o),len(self.robot.u_o)))
@@ -474,18 +475,16 @@ class CBF_CONTROLLER(object):
                                 r = np.zeros(len(uq[2:len(uq)-2*len(Map.set)-1:2]))
                                 for k in range(len(uq[2:len(uq)-2*len(Map.set)-1:2])):
                                         r[k] = min(1, max(0,1-(1-Unsafe.CBF(x_r, x_o[UnsafeList[k]][0:2]))*exp(-uq[2*k+2]*T)))
-                                        Dists[k] = Unsafe.set(x_r , x_o[UnsafeList[k]][0:2])
                                 self.trajs.risk.append(max(r))    
                 elif not findBestCommandAnyway and len(uq[2:len(uq)-len(Map.set)-1])>0:
                         r = np.zeros(len(uq[2:len(uq)-len(Map.set)-1]))
                         for k in range(len(uq[2:len(uq)-len(Map.set)-1])):
                                 r[k] = min(1, max(0,1-(1-Unsafe.CBF(x_r, x_o[UnsafeList[k]][0:2]))*exp(-uq[k+2]*T)))
-                                Dists[k] = Unsafe.set(x_r , x_o[UnsafeList[k]][0:2])
                         self.trajs.risk.append(max(r))
+                        if max(r)>0.1:
+                                1
 
                 elif not findBestCommandAnyway and len(uq) == 2:  # feasible solution is not found
-                        for k in range(len(UnsafeList)):
-                                        Dists[k] = Unsafe.set(x_r , x_o[UnsafeList[k]][0:2])
                         self.trajs.risk.append(-risk)  # meaning that solution is not found 
                 else:  # No human is around 
                         self.trajs.risk.append(0.0)    
@@ -502,8 +501,8 @@ if __name__ == '__main__':
         GoalCenter = np.array([0, 0])
         rGoal = np.power(0.5,2)
         # Unsafe 
-        UnsafeInclude = 12    # consider obstacle if in radius
-        UnsafeRadius = 0.6    #radius of unsafe sets/distance from obstacles
+        UnsafeInclude = 9    # consider obstacle if in radius
+        UnsafeRadius = 0.5    #radius of unsafe sets/distance from obstacles
         # Enviroment Bounds
         env_bounds = type('', (), {})()
         env_bounds.y_min = -1.2
@@ -515,7 +514,7 @@ if __name__ == '__main__':
         U = np.array([[-0.33,0.33],[-0.3,0.3]])
         T = 1  #Lookahead horizon
         risk = 0.1    # max risk desired        
-        gamma = 2       # CBF coefficient
+        gamma = 5       # CBF coefficient
         u1d = 0  # desired input to save energy!
         # Plotting options 
         plotit = 1

@@ -7,6 +7,6 @@
 	</node>
 
 	<!-- agent order -->
-	<node pkg="cbf_ros" type="agent.py" name="agent">
+	<node pkg="cbf_ros" type="agent.py" name="agent" output="screen" args="--model_name agent">
 	</node>
 </launch>

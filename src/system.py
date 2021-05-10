@@ -8,9 +8,8 @@ class System(object):
     def __init__(self, name, states):
         self.name = name
         self.states =  states
-        self.type = type
 
-    #@property
+    # @property
     def system_details(self):
         return '{} {} {}'.format(self.name, self.states, self.solver)
 

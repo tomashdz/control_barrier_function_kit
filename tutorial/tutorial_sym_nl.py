@@ -20,8 +20,8 @@ class CBF:
         self.expr_bs = []
         self.lamb_G = []
 
-        a1 = 7
-        a2 = 10
+        a1 = 1  
+        a2 = 1
 
         expr = self.get_expr(B, f, g, states, states_dot)
 
@@ -31,7 +31,7 @@ class CBF:
 #!  h+B is incorrect when second order system,
         self.lamb_h = lambdify(
             # [(cx, cy, rad_x, rad_y, xr0, xr1, xr2)], (h+B), "math")
-            [(cx, cy, rad_x, rad_y, xr0, xr1, xr2)], (a1 * self.B_d[0][0] + a2 * B), "math")
+            [(cx, cy, rad_x, rad_y, xr0, xr1, xr2)], (a1 * self.B_d[0][0] + a2 * B+h), "math")
 
     def compute_G_h(self, x):
         self.G = []

@@ -5,13 +5,13 @@ import numpy as np
 # TODO: Add description to functions
 
 class System(object):
-    
+
     """
     Args:
         object (system class): creates object of a system, and includes methods for modifying it
 
     Returns:
-        system object: the model describes dx = f(x) + g(x)*inputs , y = Cx where x is the system states 
+        system object: the model describes dx = f(x) + g(x)*inputs , y = Cx where x is the system states
     """
 
     Full_states = True          # If true the states are fully and precisely meaurable and y = x
@@ -20,8 +20,8 @@ class System(object):
         self.states = states
         self.nDim = len(states)
         self.inputs = inputs
-        self.model = model 
-    # TODO: Check the observability given C, the assert part may need more attention too   
+        self.model = model
+    # TODO: Check the observability given C, the assert part may need more attention too
         for key, value in kwargs.items():
             if key == "C":
                 C = value
@@ -34,7 +34,7 @@ class System(object):
     def system_details(self):
         return '{} {} {} {}'.format(self.states, self.inputs, self.Full_states, self.model.__dict__)
 
-    # def add_output_info(self, C): 
+    # def add_output_info(self, C):
     #     if np.array(C).shape != np.eye(self.nDim).shape or not p.allclose(np.eye(self.nDim),C):
     #         assert np.array(C).shape[1] == self.nDim, "inappropriate C shape"   #y = CX
     #         self.model.C = Matrix(C)

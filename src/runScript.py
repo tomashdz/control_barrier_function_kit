@@ -96,7 +96,7 @@ if __name__ == '__main__':
 
     C = Controller([[1,0,0],[0,1,0]])
 
-    ego = System('ego','ego', ego_model.states, ego_model.inputs, ego_model, C = C.C)
+    ego = System('ego', ego_model.states, ego_model.inputs, ego_model, C = C.C)
     print(ego.system_details())
 
 
@@ -113,7 +113,7 @@ if __name__ == '__main__':
     C = [[1,0,0,0],[0,1,0,0]]
     D = np.eye(2)
 
-    agent = Stochastic('agent','agent', states, inputs, model, C = C, G = G , D= D )
+    agent = Stochastic('agent', states, inputs, model, C = C, G = G , D= D )
     print(agent.system_details())
     UnsafeRadius = 0.5
     h = lambda x, y : (x[0]-y[0])**2+(x[1]-y[1])**2-(UnsafeRadius+l)**2

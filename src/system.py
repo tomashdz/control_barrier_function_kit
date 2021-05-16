@@ -15,9 +15,8 @@ class System(object):
     """
 
     Full_states = True          # If true the states are fully and precisely meaurable and y = x
-    def __init__(self, name, sys_type, states, inputs, model,**kwargs):
+    def __init__(self, name, states, inputs, model,**kwargs):
         self.name = name        # TODO: Do we need name??
-        self.type = sys_type    # agent or ego:  Describes whether we have control or not, do we need?
         self.states = states
         self.nDim = len(states)
         self.inputs = inputs
@@ -33,7 +32,7 @@ class System(object):
 
 
     def system_details(self):
-        return '{} {} {} {} {}'.format(self.type, self.states, self.inputs, self.Full_states, self.model.__dict__)
+        return '{} {} {} {}'.format(self.states, self.inputs, self.Full_states, self.model.__dict__)
 
     # def add_output_info(self, C): 
     #     if np.array(C).shape != np.eye(self.nDim).shape or not p.allclose(np.eye(self.nDim),C):
@@ -48,8 +47,8 @@ class System(object):
 
 
 class Stochastic(System):
-    def __init__(self, name, sys_type, states, inputs, model,**kwargs):
-        super(Stochastic, self).__init__(name, sys_type, states, inputs, model,**kwargs)
+    def __init__(self, name, states, inputs, model,**kwargs):
+        super(Stochastic, self).__init__(name, states, inputs, model,**kwargs)
         #TODO: Add checks to make sure G or D are passed to Stochatic 
         for key, value in kwargs.items():
             if key == "G":

@@ -26,21 +26,9 @@ class Appr_unicycle_model(Model):
         f, g, dx (symbolic expressions): to describe model of the system as dx = f+g*input
     """
 
-    def __init__(self, states_str, inputs_str, l):
-        if len(states_str) != 3 or len(inputs_str)!=2:
-                raise ValueError("appr_unicycle model has 3 states and 2 inputs")
-
-        states_symbol = []
-        for state_str in states_str:
-            state_symbol = Symbol(state_str)
-            states_symbol.append(state_symbol)
-        states = Matrix(states_symbol)
-
-        inputs_symbol = []
-        for input_str in inputs_str:
-            input_symbol = Symbol(input_str)
-            inputs_symbol.append(input_symbol)
-        inputs = Matrix(inputs_symbol)
+    def __init__(self, states, inputs, l):
+        if states.shape[0] != 3 or inputs.shape[0] != 2:
+            raise ValueError("appr_unicycle model has 3 states and 2 inputs")
 
         super(Appr_unicycle_model, self).__init__(states, inputs)
 
@@ -92,7 +80,20 @@ if __name__ == '__main__':
     states_str = ['xr_0', 'xr_1', 'xr_2']
     inputs_str = ['ur_0', 'ur_1']
     l = 0.1
-    ego_model = Appr_unicycle_model(states_str, inputs_str, l)
+
+    states_symbol = []
+    for state_str in states_str:
+        state_symbol = Symbol(state_str)
+        states_symbol.append(state_symbol)
+    states = Matrix(states_symbol)
+
+    inputs_symbol = []
+    for input_str in inputs_str:
+        input_symbol = Symbol(input_str)
+        inputs_symbol.append(input_symbol)
+    inputs = Matrix(inputs_symbol)
+
+    ego_model = Appr_unicycle_model(states, inputs, l)
 
     ego_controller = Controller([[1,0,0],[0,1,0]])
 

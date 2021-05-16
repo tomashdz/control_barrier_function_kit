@@ -15,20 +15,17 @@ class System(object):
     """
 
     Full_states = True          # If true the states are fully and precisely meaurable and y = x
-    def __init__(self, name, states, inputs, model,**kwargs):
+    def __init__(self, name, states, inputs, model, controller):
         self.name = name        # TODO: Do we need name??
         self.states = states
         self.nDim = len(states)
         self.inputs = inputs
         self.model = model
-    # TODO: Check the observability given C, the assert part may need more attention too
-        for key, value in kwargs.items():
-            if key == "C":
-                C = value
-                if np.array(C).shape != np.eye(self.nDim).shape or not np.allclose(np.eye(self.nDim),C):
-                    assert np.array(C).shape[1] == self.nDim, "inappropriate C shape"   #y = CX
-                    self.model.C = Matrix(C)
-                    self.Full_states = False
+        # TODO: Check the observability given C, the assert part may need more attention too
+        if np.array(controller).shape != np.eye(self.nDim).shape or not np.allclose(np.eye(self.nDim),controller):
+            assert np.array(controller).shape[1] == self.nDim, "inappropriate C shape"   #y = CX
+            self.model.C = Matrix(controller)
+            self.Full_states = False
 
 
     def system_details(self):
@@ -47,8 +44,8 @@ class System(object):
 
 
 class Stochastic(System):
-    def __init__(self, name, states, inputs, model,**kwargs):
-        super(Stochastic, self).__init__(name, states, inputs, model,**kwargs)
+    def __init__(self, name, states, inputs, model, controller, **kwargs):
+        super(Stochastic, self).__init__(name, states, inputs, model, controller)
         #TODO: Add checks to make sure G or D are passed to Stochatic 
         for key, value in kwargs.items():
             if key == "G":

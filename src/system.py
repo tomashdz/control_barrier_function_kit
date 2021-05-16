@@ -14,7 +14,6 @@ class System(object):
         system object: the model describes dx = f(x) + g(x)*inputs , y = Cx where x is the system states
     """
 
-    Full_states = True          # If true the states are fully and precisely meaurable and y = x
     def __init__(self, name, states, inputs, model, controller):
         self.name = name        # TODO: Do we need name??
         self.states = states
@@ -22,6 +21,7 @@ class System(object):
         self.inputs = inputs
         self.model = model
         # TODO: Check the observability given C, the assert part may need more attention too
+        self.Full_states = True          # If true the states are fully and precisely meaurable and y = x
         if np.array(controller).shape != np.eye(self.nDim).shape or not np.allclose(np.eye(self.nDim),controller):
             assert np.array(controller).shape[1] == self.nDim, "inappropriate C shape"   #y = CX
             self.model.C = Matrix(controller)

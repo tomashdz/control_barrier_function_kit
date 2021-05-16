@@ -55,8 +55,8 @@ class Stochastic(System):
                 self.model.G = Matrix(G)
             elif key == "D":
                 D = value
-                try: self.model.C
-                except: self.model.C = np.eye(nDim)
+                try: self.controller.C
+                except: self.controller.C = np.eye(nDim)
                 assert np.array(D).shape[0] == self.controller.C.shape[0]
                 self.model.D = Matrix(D)
                 self.Full_states = False

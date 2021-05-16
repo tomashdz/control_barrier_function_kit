@@ -4,8 +4,21 @@ from CBF import *
 import numpy as np
 
 class model(object):
-    def __init__(self):
-        pass
+    def __init__(self, states_str, inputs_str):
+        states_symbol = []
+        for state_str in states_str:
+            state_symbol = Symbol(state_str)
+            states_symbol.append(state_symbol)
+        self.states = Matrix(states_symbol)
+
+        inputs_symbol = []
+        for input_str in inputs_str:
+            input_symbol = Symbol(input_str)
+            inputs_symbol.append(input_symbol)
+        self.inputs = Matrix(inputs_symbol)
+
+        return
+
 
 class appr_unicycle_model(model):
     """This function defines approximate unicycle model 
@@ -23,17 +36,7 @@ class appr_unicycle_model(model):
     """
 
     def __init__(self, states_str, inputs_str, **kwargs):
-        states_symbol = []
-        for state_str in states_str:
-            state_symbol = Symbol(state_str)
-            states_symbol.append(state_symbol)
-        self.states = Matrix(states_symbol)
-
-        inputs_symbol = []
-        for input_str in inputs_str:
-            input_symbol = Symbol(input_str)
-            inputs_symbol.append(input_symbol)
-        self.inputs = Matrix(inputs_symbol)
+        super(appr_unicycle_model, self).__init__(states_str, inputs_str)
 
         if len(self.states) != 3 or len(self.inputs)!=2:
                 raise ValueError("appr_unicycle model has 3 states and 2 inputs")

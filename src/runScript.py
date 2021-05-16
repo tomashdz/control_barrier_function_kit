@@ -62,23 +62,15 @@ class  Agent_break_model(Model):
     Returns:
         f, dx (symbolic expressions): to describe model of the system as dx = f
     """
-    def __init__(self, states, inputs, **kwargs):
+    def __init__(self, states, inputs, radi, multi):
         if states.shape[0] != 4 or inputs.shape[0] != 2:
             raise ValueError("appr_unicycle model has 3 states and 2 inputs")
 
         super(Agent_break_model, self).__init__(states, inputs)
 
-        for key, value in kwargs.items():
-            if key == "radi":
-                radi = value
-            elif key == "mult":
-                c = value
-
-        try: radi, c
-        except NameError: ValueError('you need to define l for this model')
-        else:
-            self.f = Matrix([states[2],states[3],-exp( c*(radi-(states[0]-inputs[0])**2) ),  -exp( c*(radi-(states[1]-inputs[1])**2) )] )
-            self.dx = self.f
+        c = multi
+        self.f = Matrix([states[2],states[3],-exp( c*(radi-(states[0]-inputs[0])**2) ),  -exp( c*(radi-(states[1]-inputs[1])**2) )] )
+        self.dx = self.f
         return
 
 
@@ -109,7 +101,7 @@ if __name__ == '__main__':
     states = strList2SympyMatrix(states_str)
     inputs = strList2SympyMatrix(inputs_str)
 
-    agent_model = Agent_break_model(states, inputs, radi = 1, mult = 10)
+    agent_model = Agent_break_model(states, inputs, 1, 10)
 
 
     G = np.eye(len(states))

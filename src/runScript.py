@@ -47,7 +47,7 @@ class Appr_unicycle_model(Model):
         return
 
 
-def  Agent_break_model(states, inputs, **kwargs):
+class  Agent_break_model(Model):
     """This function defines agent model with the assumption that the agent maintains its velocities
     in the x and y direction unless it is close to the ego when it slows down 
 
@@ -62,23 +62,24 @@ def  Agent_break_model(states, inputs, **kwargs):
     Returns:
         f, dx (symbolic expressions): to describe model of the system as dx = f
     """
-    states = Matrix(states)
-    inputs = Matrix(inputs)
-    if len(states) != 4 or len(inputs)!=2:
+    def __init__(self, states, inputs, **kwargs):
+        if states.shape[0] != 4 or inputs.shape[0] != 2:
             raise ValueError("appr_unicycle model has 3 states and 2 inputs")
-    for key, value in kwargs.items():
-        if key == "radi":
-            radi = value
-        elif key == "mult":
-            c = value
 
-    try: radi, c
-    except NameError: ValueError('you need to define l for this model')
-    else:
-        f = Matrix([states[2],states[3],-exp( c*(radi-(states[0]-inputs[0])**2) ),  -exp( c*(radi-(states[1]-inputs[1])**2) )] )
-        dx = f
-    return f,dx
+        super(Agent_break_model, self).__init__(states, inputs)
 
+        for key, value in kwargs.items():
+            if key == "radi":
+                radi = value
+            elif key == "mult":
+                c = value
+
+        try: radi, c
+        except NameError: ValueError('you need to define l for this model')
+        else:
+            self.f = Matrix([states[2],states[3],-exp( c*(radi-(states[0]-inputs[0])**2) ),  -exp( c*(radi-(states[1]-inputs[1])**2) )] )
+            self.dx = self.f
+        return
 
 
 
@@ -102,19 +103,21 @@ if __name__ == '__main__':
 
 
     # AGENT
-    xo_0, xo_1, xo_2, xo_3 = symbols('xo_0 xo_1 xo_2 xo_3')
-    states = [xo_0, xo_1, xo_2, xo_3]
-    xr_0, xr_1 = symbols('xr_0 xr_1')
-    inputs = [xr_0, xr_1]   #
+    states_str = ['xo_0', 'xo_1', 'xo_2', 'xo_3']
+    inputs_str = ['ur_0', 'ur_1']   #TODO: (Tom) can we use same name of symbol?
+
+    states = strList2SympyMatrix(states_str)
+    inputs = strList2SympyMatrix(inputs_str)
+
     model = type('',(),{})()
-    model.f, model.dx = Agent_break_model(states, inputs, radi = 1, mult = 10)
+    agent_model = Agent_break_model(states, inputs, radi = 1, mult = 10)
 
 
     G = np.eye(len(states))
     agent_controller = Controller([[1,0,0,0],[0,1,0,0]])
     D = np.eye(2)
 
-    agent = Stochastic('agent', states, inputs, model, agent_controller, G = G , D= D )
+    agent = Stochastic('agent', states, inputs, agent_model, agent_controller, G = G , D= D )
     print(agent.system_details())
     UnsafeRadius = 0.5
     h = lambda x, y : (x[0]-y[0])**2+(x[1]-y[1])**2-(UnsafeRadius+l)**2

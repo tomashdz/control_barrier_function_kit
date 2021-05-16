@@ -23,8 +23,8 @@ class System(object):
         # TODO: Check the observability given C, the assert part may need more attention too
         self.Full_states = True          # If true the states are fully and precisely meaurable and y = x
         nDim = len(states)
-        if np.array(controller).shape != np.eye(nDim).shape or not np.allclose(np.eye(nDim),controller):
-            assert np.array(controller).shape[1] == nDim, "inappropriate C shape"   #y = CX
+        if np.array(self.controller.C).shape != np.eye(nDim).shape or not np.allclose(np.eye(nDim),self.controller.C):
+            assert np.array(self.controller.C).shape[1] == nDim, "inappropriate C shape"   #y = CX
             self.Full_states = False
 
 
@@ -57,7 +57,7 @@ class Stochastic(System):
                 D = value
                 try: self.model.C
                 except: self.model.C = np.eye(nDim)
-                assert np.array(D).shape[0] == self.controller.shape[0]
+                assert np.array(D).shape[0] == self.controller.C.shape[0]
                 self.model.D = Matrix(D)
                 self.Full_states = False
 

@@ -1,15 +1,15 @@
-from sympy import symbols, Matrix, sin, cos, exp
+from sympy import Symbol, symbols, Matrix, sin, cos, exp
 from system import *
 from CBF import *
 import numpy as np
 
 
-def  appr_unicycle_model(states, inputs, **kwargs):
+def appr_unicycle_model(states_str, inputs_str, **kwargs):
     """This function defines approximate unicycle model 
 
     Args:
-        states (Sympy matrix): vector of symbolic system states 
-        inputs (Sympy matrix): vector of symbolic system inputs
+        states_str (list): name list of system states 
+        inputs_str (list): name list of system inputs
 
     Raises:
         ValueError: Raised when l = value is not given in the kwargs or 
@@ -18,8 +18,18 @@ def  appr_unicycle_model(states, inputs, **kwargs):
     Returns:
         f, g, dx (symbolic expressions): to describe model of the system as dx = f+g*input
     """
-    states = Matrix(states)
-    inputs = Matrix(inputs)
+    states_symbol = []
+    for state_str in states_str:
+        state_symbol = Symbol(state_str)
+        states_symbol.append(state_symbol)
+    states = Matrix(states_symbol)
+
+    inputs_symbol = []
+    for input_str in inputs_str:
+        input_symbol = Symbol(input_str)
+        inputs_symbol.append(input_symbol)
+    inputs = Matrix(inputs_symbol)
+
     if len(states) != 3 or len(inputs)!=2:
             raise ValueError("appr_unicycle model has 3 states and 2 inputs")
     for key, value in kwargs.items():
@@ -31,7 +41,7 @@ def  appr_unicycle_model(states, inputs, **kwargs):
         f = Matrix([0,0,0])
         g = Matrix([[cos(states[2]), -l*sin(states[2])], [sin(states[2]), l*cos(states[2])], [0, 1]])
         dx = f+g*inputs
-    return f,g,dx
+    return f,g,dx, states, inputs
 
 def  agent_break_model(states, inputs, **kwargs):
     """This function defines agent model with the assumption that the agent maintains its velocities
@@ -72,22 +82,21 @@ if __name__ == '__main__':
     """This is main
     """
     # EGO
-    xr_0, xr_1, xr_3 = symbols('xr_0 xr_1 xr_2')
-    ur_0, ur_1 = symbols('ur_0 ur_1')
-    states = [xr_0, xr_1, xr_3]
-    inputs = [ur_0, ur_1]
+    states_str = ['xr_0', 'xr_1', 'xr_2']
+    inputs_str = ['ur_0', 'ur_1']
     model = type('',(),{})()
     l = 0.1
-    model.f, model.g, model.dx = appr_unicycle_model(states, inputs, l = l)
+    model.f, model.g, model.dx, model.states, model.inputs = appr_unicycle_model(states_str, inputs_str, l = l)
 
     C = [[1,0,0],[0,1,0]]
-    ego = System('ego','ego', states, inputs, model, C = C)
+    ego = System('ego','ego', model.states, model.inputs, model, C = C)
     print(ego.system_details())
 
 
     # AGENT
     xo_0, xo_1, xo_2, xo_3 = symbols('xo_0 xo_1 xo_2 xo_3')
     states = [xo_0, xo_1, xo_2, xo_3]
+    xr_0, xr_1 = symbols('xr_0 xr_1')
     inputs = [xr_0, xr_1]   #
     model = type('',(),{})()
     model.f, model.dx = agent_break_model(states, inputs, radi = 1, mult = 10)

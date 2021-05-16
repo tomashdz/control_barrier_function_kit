@@ -104,9 +104,9 @@ if __name__ == '__main__':
     agent_model = Agent_break_model(states, inputs, 1, 10)
 
 
-    G = np.eye(len(states))
+    G = Matrix(np.eye(len(states)))
     agent_controller = Controller([[1,0,0,0],[0,1,0,0]])
-    D = np.eye(2)
+    D = Matrix(np.eye(2))
 
     agent_system = Stochastic('agent', states, inputs, agent_model, agent_controller, G, D )
     print(agent_system.system_details())

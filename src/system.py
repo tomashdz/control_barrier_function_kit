@@ -49,12 +49,12 @@ class Stochastic(System):
         #TODO: Add checks to make sure G or D are passed to Stochatic 
         nDim = len(states)
         assert np.array(G).shape[0] == nDim, "inappropriate G shape"   #dx = f(x)+Gdw
-        self.model.G = Matrix(G)
+        self.model.G = G
 
         try: self.controller.C
         except: self.controller.C = np.eye(nDim)
         assert np.array(D).shape[0] == self.controller.C.shape[0]
-        self.model.D = Matrix(D)
+        self.model.D = D
         self.Full_states = False
 
 

@@ -4,14 +4,14 @@ from controller import *
 from CBF import *
 import numpy as np
 
-class model(object):
+class Model(object):
     def __init__(self, states, inputs):
         self.states = states
         self.inputs = inputs
         return
 
 
-class appr_unicycle_model(model):
+class Appr_unicycle_model(Model):
     """This function defines approximate unicycle model 
 
     Args:
@@ -42,7 +42,7 @@ class appr_unicycle_model(model):
             inputs_symbol.append(input_symbol)
         inputs = Matrix(inputs_symbol)
 
-        super(appr_unicycle_model, self).__init__(states, inputs)
+        super(Appr_unicycle_model, self).__init__(states, inputs)
 
         self.f = Matrix([0,0,0])    #TODO: (Tom) why here is empty?
         self.g = Matrix([[cos(self.states[2]), -l*sin(self.states[2])], [sin(self.states[2]), l*cos(self.states[2])], [0, 1]])
@@ -50,7 +50,7 @@ class appr_unicycle_model(model):
         return
 
 
-def  agent_break_model(states, inputs, **kwargs):
+def  Agent_break_model(states, inputs, **kwargs):
     """This function defines agent model with the assumption that the agent maintains its velocities
     in the x and y direction unless it is close to the ego when it slows down 
 
@@ -92,7 +92,7 @@ if __name__ == '__main__':
     states_str = ['xr_0', 'xr_1', 'xr_2']
     inputs_str = ['ur_0', 'ur_1']
     l = 0.1
-    ego_model = appr_unicycle_model(states_str, inputs_str, l)
+    ego_model = Appr_unicycle_model(states_str, inputs_str, l)
 
     ego_controller = Controller([[1,0,0],[0,1,0]])
 
@@ -106,7 +106,7 @@ if __name__ == '__main__':
     xr_0, xr_1 = symbols('xr_0 xr_1')
     inputs = [xr_0, xr_1]   #
     model = type('',(),{})()
-    model.f, model.dx = agent_break_model(states, inputs, radi = 1, mult = 10)
+    model.f, model.dx = Agent_break_model(states, inputs, radi = 1, mult = 10)
 
 
     G = np.eye(len(states))

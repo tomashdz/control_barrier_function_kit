@@ -4,6 +4,15 @@ from controller import *
 from CBF import *
 import numpy as np
 
+#TODO: (Tom) this should be temporal
+def strList2SympyMatrix(str_list):
+    sympySymbols = []
+    for istr in str_list:
+        sympySymbol = Symbol(istr)
+        sympySymbols.append(sympySymbol)
+    sympyMatrix = Matrix(sympySymbols)
+    return sympyMatrix
+
 class Model(object):
     def __init__(self, states, inputs):
         self.states = states
@@ -81,17 +90,8 @@ if __name__ == '__main__':
     inputs_str = ['ur_0', 'ur_1']
     l = 0.1
 
-    states_symbol = []
-    for state_str in states_str:
-        state_symbol = Symbol(state_str)
-        states_symbol.append(state_symbol)
-    states = Matrix(states_symbol)
-
-    inputs_symbol = []
-    for input_str in inputs_str:
-        input_symbol = Symbol(input_str)
-        inputs_symbol.append(input_symbol)
-    inputs = Matrix(inputs_symbol)
+    states = strList2SympyMatrix(states_str)
+    inputs = strList2SympyMatrix(inputs_str)
 
     ego_model = Appr_unicycle_model(states, inputs, l)
 

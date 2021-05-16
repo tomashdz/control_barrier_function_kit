@@ -3,8 +3,11 @@ from system import *
 from CBF import *
 import numpy as np
 
+class model(object):
+    def __init__(self):
+        pass
 
-def appr_unicycle_model(states_str, inputs_str, **kwargs):
+class appr_unicycle_model(model):
     """This function defines approximate unicycle model 
 
     Args:
@@ -18,30 +21,33 @@ def appr_unicycle_model(states_str, inputs_str, **kwargs):
     Returns:
         f, g, dx (symbolic expressions): to describe model of the system as dx = f+g*input
     """
-    states_symbol = []
-    for state_str in states_str:
-        state_symbol = Symbol(state_str)
-        states_symbol.append(state_symbol)
-    states = Matrix(states_symbol)
 
-    inputs_symbol = []
-    for input_str in inputs_str:
-        input_symbol = Symbol(input_str)
-        inputs_symbol.append(input_symbol)
-    inputs = Matrix(inputs_symbol)
+    def __init__(self, states_str, inputs_str, **kwargs):
+        states_symbol = []
+        for state_str in states_str:
+            state_symbol = Symbol(state_str)
+            states_symbol.append(state_symbol)
+        self.states = Matrix(states_symbol)
 
-    if len(states) != 3 or len(inputs)!=2:
-            raise ValueError("appr_unicycle model has 3 states and 2 inputs")
-    for key, value in kwargs.items():
-        if key == "l":
-            l = value
-    try: l
-    except NameError: ValueError('you need to define l for this model')
-    else:
-        f = Matrix([0,0,0])
-        g = Matrix([[cos(states[2]), -l*sin(states[2])], [sin(states[2]), l*cos(states[2])], [0, 1]])
-        dx = f+g*inputs
-    return f,g,dx, states, inputs
+        inputs_symbol = []
+        for input_str in inputs_str:
+            input_symbol = Symbol(input_str)
+            inputs_symbol.append(input_symbol)
+        self.inputs = Matrix(inputs_symbol)
+
+        if len(self.states) != 3 or len(self.inputs)!=2:
+                raise ValueError("appr_unicycle model has 3 states and 2 inputs")
+        for key, value in kwargs.items():
+            if key == "l":
+                l = value
+        try: l
+        except NameError: ValueError('you need to define l for this model')
+        else:
+            self.f = Matrix([0,0,0])    #TODO: (Tom) why here is empty?
+            self.g = Matrix([[cos(self.states[2]), -l*sin(self.states[2])], [sin(self.states[2]), l*cos(self.states[2])], [0, 1]])
+            self.dx = self.f+self.g*self.inputs
+        return
+
 
 def  agent_break_model(states, inputs, **kwargs):
     """This function defines agent model with the assumption that the agent maintains its velocities
@@ -84,12 +90,11 @@ if __name__ == '__main__':
     # EGO
     states_str = ['xr_0', 'xr_1', 'xr_2']
     inputs_str = ['ur_0', 'ur_1']
-    model = type('',(),{})()
     l = 0.1
-    model.f, model.g, model.dx, model.states, model.inputs = appr_unicycle_model(states_str, inputs_str, l = l)
+    ego_model = appr_unicycle_model(states_str, inputs_str, l = l)
 
     C = [[1,0,0],[0,1,0]]
-    ego = System('ego','ego', model.states, model.inputs, model, C = C)
+    ego = System('ego','ego', ego_model.states, ego_model.inputs, ego_model, C = C)
     print(ego.system_details())
 
 

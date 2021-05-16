@@ -35,21 +35,15 @@ class appr_unicycle_model(model):
         f, g, dx (symbolic expressions): to describe model of the system as dx = f+g*input
     """
 
-    def __init__(self, states_str, inputs_str, **kwargs):
+    def __init__(self, states_str, inputs_str, l):
         if len(states_str) != 3 or len(inputs_str)!=2:
                 raise ValueError("appr_unicycle model has 3 states and 2 inputs")
 
         super(appr_unicycle_model, self).__init__(states_str, inputs_str)
 
-        for key, value in kwargs.items():
-            if key == "l":
-                l = value
-        try: l
-        except NameError: ValueError('you need to define l for this model')
-        else:
-            self.f = Matrix([0,0,0])    #TODO: (Tom) why here is empty?
-            self.g = Matrix([[cos(self.states[2]), -l*sin(self.states[2])], [sin(self.states[2]), l*cos(self.states[2])], [0, 1]])
-            self.dx = self.f+self.g*self.inputs
+        self.f = Matrix([0,0,0])    #TODO: (Tom) why here is empty?
+        self.g = Matrix([[cos(self.states[2]), -l*sin(self.states[2])], [sin(self.states[2]), l*cos(self.states[2])], [0, 1]])
+        self.dx = self.f+self.g*self.inputs
         return
 
 
@@ -95,7 +89,7 @@ if __name__ == '__main__':
     states_str = ['xr_0', 'xr_1', 'xr_2']
     inputs_str = ['ur_0', 'ur_1']
     l = 0.1
-    ego_model = appr_unicycle_model(states_str, inputs_str, l = l)
+    ego_model = appr_unicycle_model(states_str, inputs_str, l)
 
     C = [[1,0,0],[0,1,0]]
     ego = System('ego','ego', ego_model.states, ego_model.inputs, ego_model, C = C)

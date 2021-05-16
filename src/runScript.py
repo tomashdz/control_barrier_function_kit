@@ -4,19 +4,9 @@ from CBF import *
 import numpy as np
 
 class model(object):
-    def __init__(self, states_str, inputs_str):
-        states_symbol = []
-        for state_str in states_str:
-            state_symbol = Symbol(state_str)
-            states_symbol.append(state_symbol)
-        self.states = Matrix(states_symbol)
-
-        inputs_symbol = []
-        for input_str in inputs_str:
-            input_symbol = Symbol(input_str)
-            inputs_symbol.append(input_symbol)
-        self.inputs = Matrix(inputs_symbol)
-
+    def __init__(self, states, inputs):
+        self.states = states
+        self.inputs = inputs
         return
 
 
@@ -39,7 +29,19 @@ class appr_unicycle_model(model):
         if len(states_str) != 3 or len(inputs_str)!=2:
                 raise ValueError("appr_unicycle model has 3 states and 2 inputs")
 
-        super(appr_unicycle_model, self).__init__(states_str, inputs_str)
+        states_symbol = []
+        for state_str in states_str:
+            state_symbol = Symbol(state_str)
+            states_symbol.append(state_symbol)
+        states = Matrix(states_symbol)
+
+        inputs_symbol = []
+        for input_str in inputs_str:
+            input_symbol = Symbol(input_str)
+            inputs_symbol.append(input_symbol)
+        inputs = Matrix(inputs_symbol)
+
+        super(appr_unicycle_model, self).__init__(states, inputs)
 
         self.f = Matrix([0,0,0])    #TODO: (Tom) why here is empty?
         self.g = Matrix([[cos(self.states[2]), -l*sin(self.states[2])], [sin(self.states[2]), l*cos(self.states[2])], [0, 1]])

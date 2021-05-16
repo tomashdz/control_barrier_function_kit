@@ -97,8 +97,8 @@ if __name__ == '__main__':
 
     ego_controller = Controller([[1,0,0],[0,1,0]])
 
-    ego = System('ego', ego_model.states, ego_model.inputs, ego_model, ego_controller)
-    print(ego.system_details())
+    ego_system = System('ego', ego_model.states, ego_model.inputs, ego_model, ego_controller)
+    print(ego_system.system_details())
 
 
     # AGENT
@@ -118,7 +118,7 @@ if __name__ == '__main__':
     print(agent.system_details())
     UnsafeRadius = 0.5
     h = lambda x, y : (x[0]-y[0])**2+(x[1]-y[1])**2-(UnsafeRadius+l)**2
-    CBFs = CBF(h,[ego.states, agent.states])
+    CBFs = CBF(h,[ego_system.states, agent.states])
 
 
 

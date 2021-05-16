@@ -17,14 +17,14 @@ class System(object):
     def __init__(self, name, states, inputs, model, controller):
         self.name = name        # TODO: Do we need name??
         self.states = states
-        self.nDim = len(states)
         self.inputs = inputs
         self.model = model
         self.model.C = controller
         # TODO: Check the observability given C, the assert part may need more attention too
         self.Full_states = True          # If true the states are fully and precisely meaurable and y = x
-        if np.array(controller).shape != np.eye(self.nDim).shape or not np.allclose(np.eye(self.nDim),controller):
-            assert np.array(controller).shape[1] == self.nDim, "inappropriate C shape"   #y = CX
+        nDim = len(states)
+        if np.array(controller).shape != np.eye(nDim).shape or not np.allclose(np.eye(nDim),controller):
+            assert np.array(controller).shape[1] == nDim, "inappropriate C shape"   #y = CX
             self.Full_states = False
 
 
@@ -50,7 +50,8 @@ class Stochastic(System):
         for key, value in kwargs.items():
             if key == "G":
                 G = value
-                assert np.array(G).shape[0] == self.nDim, "inappropriate G shape"   #dx = f(x)+Gdw
+                nDim = len(states)
+                assert np.array(G).shape[0] == nDim, "inappropriate G shape"   #dx = f(x)+Gdw
                 self.model.G = Matrix(G)
             elif key == "D":
                 D = value

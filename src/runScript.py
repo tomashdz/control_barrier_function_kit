@@ -36,10 +36,11 @@ class appr_unicycle_model(model):
     """
 
     def __init__(self, states_str, inputs_str, **kwargs):
+        if len(states_str) != 3 or len(inputs_str)!=2:
+                raise ValueError("appr_unicycle model has 3 states and 2 inputs")
+
         super(appr_unicycle_model, self).__init__(states_str, inputs_str)
 
-        if len(self.states) != 3 or len(self.inputs)!=2:
-                raise ValueError("appr_unicycle model has 3 states and 2 inputs")
         for key, value in kwargs.items():
             if key == "l":
                 l = value

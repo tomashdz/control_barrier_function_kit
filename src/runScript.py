@@ -113,36 +113,3 @@ if __name__ == '__main__':
     UnsafeRadius = 0.5
     h = lambda x, y : (x[0]-y[0])**2+(x[1]-y[1])**2-(UnsafeRadius+l)**2
     CBFs = CBF(h,[ego_system.states, agent_system.states])
-
-
-
-## This may help in the future for creating a library of models:
-# def  modelinfo(modelname, states, inputs, **kwarg):
-#     keys = ["appr_unicycle", "nimble_ant"]
-
-#     if modelname == "appr_unicycle":
-#         if len(states) != 3 or len(inputs)!=2:
-#                 raise ValueError("appr_unicycle model has 3 states and 2 inputs")
-#         for key, value in kwargs.items():
-#             if key == "l":
-#                 l = value
-#         try: l
-#         except NameError: ValueError('you need to define l for this model')
-#         else:
-#             f = Matrix([0,0,0])
-#             g = Matrix([[cos(states[2]), -l*sin(states[2])], [sin(states[2]), l*cos(states[2])], [0, 1]])
-#             dx = f+g*inputs
-#     elif modelname == "nimble_ant":
-#         if len(states) != 2 or len(inputs) != 2: raise ValueError("nimble_ant model has 2 states")
-#         f = Matrix([0,0])
-#         g = Matrix([1,1])
-#         dx = f+g*inputs
-#     else:
-#         try: locals()[modelname](states, inputs, *arg)
-#         except NameError: ValueError("model not defined")
-#         else:
-#             f,g,dx = locals()[modelname](states, inputs, *arg)
-
-#     return f,g,dx
-##
-

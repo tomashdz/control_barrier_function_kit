@@ -108,7 +108,7 @@ if __name__ == '__main__':
     agent_controller = Controller([[1,0,0,0],[0,1,0,0]])
     D = np.eye(2)
 
-    agent_system = Stochastic('agent', states, inputs, agent_model, agent_controller, G = G , D= D )
+    agent_system = Stochastic('agent', states, inputs, agent_model, agent_controller, G, D )
     print(agent_system.system_details())
     UnsafeRadius = 0.5
     h = lambda x, y : (x[0]-y[0])**2+(x[1]-y[1])**2-(UnsafeRadius+l)**2

@@ -44,22 +44,18 @@ class System(object):
 
 
 class Stochastic(System):
-    def __init__(self, name, states, inputs, model, controller, **kwargs):
+    def __init__(self, name, states, inputs, model, controller, G, D):
         super(Stochastic, self).__init__(name, states, inputs, model, controller)
         #TODO: Add checks to make sure G or D are passed to Stochatic 
-        for key, value in kwargs.items():
-            nDim = len(states)
-            if key == "G":
-                G = value
-                assert np.array(G).shape[0] == nDim, "inappropriate G shape"   #dx = f(x)+Gdw
-                self.model.G = Matrix(G)
-            elif key == "D":
-                D = value
-                try: self.controller.C
-                except: self.controller.C = np.eye(nDim)
-                assert np.array(D).shape[0] == self.controller.C.shape[0]
-                self.model.D = Matrix(D)
-                self.Full_states = False
+        nDim = len(states)
+        assert np.array(G).shape[0] == nDim, "inappropriate G shape"   #dx = f(x)+Gdw
+        self.model.G = Matrix(G)
+
+        try: self.controller.C
+        except: self.controller.C = np.eye(nDim)
+        assert np.array(D).shape[0] == self.controller.C.shape[0]
+        self.model.D = Matrix(D)
+        self.Full_states = False
 
 
 

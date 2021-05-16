@@ -20,11 +20,11 @@ class System(object):
         self.nDim = len(states)
         self.inputs = inputs
         self.model = model
+        self.model.C = controller
         # TODO: Check the observability given C, the assert part may need more attention too
         self.Full_states = True          # If true the states are fully and precisely meaurable and y = x
         if np.array(controller).shape != np.eye(self.nDim).shape or not np.allclose(np.eye(self.nDim),controller):
             assert np.array(controller).shape[1] == self.nDim, "inappropriate C shape"   #y = CX
-            self.model.C = Matrix(controller)
             self.Full_states = False
 
 

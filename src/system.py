@@ -1,4 +1,4 @@
-from sympy import symbols, Matrix, sin, cos, lambdify, exp, sqrt, log, diff
+from sympy import Matrix
 import numpy as np
 
 

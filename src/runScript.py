@@ -109,7 +109,6 @@ if __name__ == '__main__':
     states = strList2SympyMatrix(states_str)
     inputs = strList2SympyMatrix(inputs_str)
 
-    model = type('',(),{})()
     agent_model = Agent_break_model(states, inputs, radi = 1, mult = 10)
 
 
@@ -117,11 +116,11 @@ if __name__ == '__main__':
     agent_controller = Controller([[1,0,0,0],[0,1,0,0]])
     D = np.eye(2)
 
-    agent = Stochastic('agent', states, inputs, agent_model, agent_controller, G = G , D= D )
-    print(agent.system_details())
+    agent_system = Stochastic('agent', states, inputs, agent_model, agent_controller, G = G , D= D )
+    print(agent_system.system_details())
     UnsafeRadius = 0.5
     h = lambda x, y : (x[0]-y[0])**2+(x[1]-y[1])**2-(UnsafeRadius+l)**2
-    CBFs = CBF(h,[ego_system.states, agent.states])
+    CBFs = CBF(h,[ego_system.states, agent_system.states])
 
 
 

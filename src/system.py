@@ -26,7 +26,7 @@ class System(object):
         for key, value in kwargs.items():
             if key == "C":
                 C = value
-                if np.array(C).shape != np.eye(self.nDim).shape or not p.allclose(np.eye(self.nDim),C):
+                if np.array(C).shape != np.eye(self.nDim).shape or not np.allclose(np.eye(self.nDim),C):
                     assert np.array(C).shape[1] == self.nDim, "inappropriate C shape"   #y = CX
                     self.model.C = Matrix(C)
                     self.Full_states = False

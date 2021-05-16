@@ -1,5 +1,6 @@
 from sympy import Symbol, symbols, Matrix, sin, cos, exp
 from system import *
+from controller import *
 from CBF import *
 import numpy as np
 
@@ -93,8 +94,9 @@ if __name__ == '__main__':
     l = 0.1
     ego_model = appr_unicycle_model(states_str, inputs_str, l)
 
-    C = [[1,0,0],[0,1,0]]
-    ego = System('ego','ego', ego_model.states, ego_model.inputs, ego_model, C = C)
+    C = Controller([[1,0,0],[0,1,0]])
+
+    ego = System('ego','ego', ego_model.states, ego_model.inputs, ego_model, C = C.C)
     print(ego.system_details())
 
 

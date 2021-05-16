@@ -19,7 +19,7 @@ class System(object):
         self.states = states
         self.inputs = inputs
         self.model = model
-        self.model.C = controller
+        self.controller = controller
         # TODO: Check the observability given C, the assert part may need more attention too
         self.Full_states = True          # If true the states are fully and precisely meaurable and y = x
         nDim = len(states)
@@ -29,7 +29,7 @@ class System(object):
 
 
     def system_details(self):
-        return '{} {} {} {}'.format(self.states, self.inputs, self.Full_states, self.model.__dict__)
+        return '{} {} {} {}'.format(self.states, self.inputs, self.Full_states, self.model.__dict__, self.controller.__dict__)
 
     # def add_output_info(self, C):
     #     if np.array(C).shape != np.eye(self.nDim).shape or not p.allclose(np.eye(self.nDim),C):
@@ -48,16 +48,16 @@ class Stochastic(System):
         super(Stochastic, self).__init__(name, states, inputs, model, controller)
         #TODO: Add checks to make sure G or D are passed to Stochatic 
         for key, value in kwargs.items():
+            nDim = len(states)
             if key == "G":
                 G = value
-                nDim = len(states)
                 assert np.array(G).shape[0] == nDim, "inappropriate G shape"   #dx = f(x)+Gdw
                 self.model.G = Matrix(G)
             elif key == "D":
                 D = value
                 try: self.model.C
-                except: self.model.C = np.eye(self.nDim)
-                assert np.array(D).shape[0] == self.model.C.shape[0]
+                except: self.model.C = np.eye(nDim)
+                assert np.array(D).shape[0] == self.controller.shape[0]
                 self.model.D = Matrix(D)
                 self.Full_states = False
 

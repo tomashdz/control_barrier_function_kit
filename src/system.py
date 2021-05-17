@@ -45,3 +45,8 @@ class Stochastic(System):
         assert np.array(D).shape[0] == self.C.shape[0]
         self.D = D
         self.Full_states = False
+
+    def system_details(self):
+        superOut = super(Stochastic, self).system_details()
+        out = superOut + '{}\n {}\n'.format(self.D, self.G)
+        return out

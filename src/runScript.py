@@ -33,8 +33,7 @@ def appr_unicycle(states, inputs, l):
 
     f = Matrix([0,0,0])    #TODO: (Tom) why here is empty?
     g = Matrix([[cos(states[2]), -l*sin(states[2])], [sin(states[2]), l*cos(states[2])], [0, 1]])
-    dx = f+g*inputs #TODO: (Tom) is that really dx? it seems x because there are no dt.
-    return dx, f, g
+    return f, g
 
 
 def  agent_break(states, inputs, radi, multi):
@@ -57,8 +56,7 @@ def  agent_break(states, inputs, radi, multi):
 
     c = multi
     f = Matrix([states[2],states[3],-exp( c*(radi-(states[0]-inputs[0])**2) ),  -exp( c*(radi-(states[1]-inputs[1])**2) )] )
-    dx = f
-    return dx, f
+    return f
 
 
 
@@ -72,7 +70,7 @@ if __name__ == '__main__':
 
     states = strList2SympyMatrix(states_str)
     inputs = strList2SympyMatrix(inputs_str)
-    dx, f, g = appr_unicycle(states, inputs, l)
+    f, g = appr_unicycle(states, inputs, l)
     C = Matrix([[1,0,0],[0,1,0]])
     ego_system = System('ego', states, inputs, f, g, C)
     print(ego_system.system_details())
@@ -85,7 +83,7 @@ if __name__ == '__main__':
     states = strList2SympyMatrix(states_str)
     inputs = strList2SympyMatrix(inputs_str)
 
-    dx, f = agent_break(states, inputs, 1, 10)
+    f = agent_break(states, inputs, 1, 10)
     g = []
     C = Matrix([[1,0,0,0],[0,1,0,0]])
     G = Matrix(np.eye(len(states)))

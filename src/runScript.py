@@ -33,7 +33,7 @@ def appr_unicycle(states, inputs, l):
 
     f = Matrix([0,0,0])    #TODO: (Tom) why here is empty?
     g = Matrix([[cos(states[2]), -l*sin(states[2])], [sin(states[2]), l*cos(states[2])], [0, 1]])
-    dx = f+g*inputs
+    dx = f+g*inputs #TODO: (Tom) is that really dx? it seems x because there are no dt.
     return dx, f, g
 
 
@@ -76,7 +76,7 @@ if __name__ == '__main__':
     dx, f, g = appr_unicycle(states, inputs, l)
 
     C = Matrix([[1,0,0],[0,1,0]])
-    dy = C*inputs
+    dy = C*inputs #TODO: (Tom) is that really dy? it seems x because there are no dt.
     ego_system = System('ego', states, inputs, dx, dy)
     print(ego_system.system_details())
 
@@ -93,8 +93,9 @@ if __name__ == '__main__':
     G = Matrix(np.eye(len(states)))
     C = Matrix([[1,0,0,0],[0,1,0,0]])
     D = Matrix(np.eye(2))
+    dy = C*inputs #TODO: (Tom) is that really dy? it seems x because there are no dt.
 
-    agent_system = Stochastic('agent', states, inputs, dx, C, G, D )
+    agent_system = Stochastic('agent', states, inputs, dx, dy, G, D )
     print(agent_system.system_details())
     UnsafeRadius = 0.5
     h = lambda x, y : (x[0]-y[0])**2+(x[1]-y[1])**2-(UnsafeRadius+l)**2

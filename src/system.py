@@ -50,8 +50,6 @@ class Stochastic(System):
             self.Full_states = False
         if D is not None:
             #TODO: (TOM) Is that unacceptable input? if so we need to use error.
-            if C is None:
-                self.C = np.eye(nDim)
             assert D.shape[0] == C.shape[0]
             self.Full_states = False
 

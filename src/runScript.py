@@ -80,7 +80,7 @@ if __name__ == '__main__':
 
     # AGENT
     states_str = ['xo_0', 'xo_1', 'xo_2', 'xo_3']
-    inputs_str = ['ur_0', 'ur_1']   #TODO: (Tom) can we use same name of symbol?
+    inputs_str = ['xr_0', 'xr_1']
 
     states = strList2SympyMatrix(states_str)
     inputs = strList2SympyMatrix(inputs_str)

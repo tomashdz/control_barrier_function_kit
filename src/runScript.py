@@ -66,10 +66,10 @@ if __name__ == '__main__':
     # EGO
     states_str = ['xr_0', 'xr_1', 'xr_2']
     inputs_str = ['ur_0', 'ur_1']
-    l = 0.1
 
     states = strList2SympyMatrix(states_str)
     inputs = strList2SympyMatrix(inputs_str)
+    l = 0.1
     f, g = appr_unicycle(states, inputs, l)
     C = Matrix([[1,0,0],[0,1,0]])
     ego_system = System('ego', states, inputs, f, g, C)
@@ -82,15 +82,14 @@ if __name__ == '__main__':
 
     states = strList2SympyMatrix(states_str)
     inputs = strList2SympyMatrix(inputs_str)
-
     f = agent_break(states, inputs, 1, 10)
     g = []
     C = Matrix([[1,0,0,0],[0,1,0,0]])
     G = Matrix(np.eye(len(states)))
     D = Matrix(np.eye(2))
-
     agent_system = Stochastic('agent', states, inputs, f, g, C, G, D)
     print(agent_system.system_details())
+
     UnsafeRadius = 0.5
     h = lambda x, y : (x[0]-y[0])**2+(x[1]-y[1])**2-(UnsafeRadius+l)**2
     CBFs = CBF(h,[ego_system, agent_system])

@@ -20,7 +20,7 @@ class Model(object):
         return
 
 
-class Appr_unicycle_model(Model):
+def appr_unicycle(states, inputs, l):
     """This function defines approximate unicycle model 
 
     Args:
@@ -35,16 +35,13 @@ class Appr_unicycle_model(Model):
         f, g, dx (symbolic expressions): to describe model of the system as dx = f+g*input
     """
 
-    def __init__(self, states, inputs, l):
-        if states.shape[0] != 3 or inputs.shape[0] != 2:
-            raise ValueError("appr_unicycle model has 3 states and 2 inputs")
+    if states.shape[0] != 3 or inputs.shape[0] != 2:
+        raise ValueError("appr_unicycle model has 3 states and 2 inputs")
 
-        super(Appr_unicycle_model, self).__init__(states, inputs)
-
-        self.f = Matrix([0,0,0])    #TODO: (Tom) why here is empty?
-        self.g = Matrix([[cos(self.states[2]), -l*sin(self.states[2])], [sin(self.states[2]), l*cos(self.states[2])], [0, 1]])
-        self.dx = self.f+self.g*self.inputs
-        return
+    f = Matrix([0,0,0])    #TODO: (Tom) why here is empty?
+    g = Matrix([[cos(states[2]), -l*sin(states[2])], [sin(states[2]), l*cos(states[2])], [0, 1]])
+    dx = f+g*inputs
+    return dx, f, g
 
 
 class  Agent_break_model(Model):
@@ -86,11 +83,12 @@ if __name__ == '__main__':
     states = strList2SympyMatrix(states_str)
     inputs = strList2SympyMatrix(inputs_str)
 
-    ego_model = Appr_unicycle_model(states, inputs, l)
+    ego_model = type('',(),{})()
+    ego_model.dx, ego_model.f, ego_model.g = appr_unicycle(states, inputs, l)
 
     ego_controller = Controller([[1,0,0],[0,1,0]])
 
-    ego_system = System('ego', ego_model.states, ego_model.inputs, ego_model, ego_controller)
+    ego_system = System('ego', states, inputs, ego_model, ego_controller)
     print(ego_system.system_details())
 
 
@@ -112,4 +110,4 @@ if __name__ == '__main__':
     print(agent_system.system_details())
     UnsafeRadius = 0.5
     h = lambda x, y : (x[0]-y[0])**2+(x[1]-y[1])**2-(UnsafeRadius+l)**2
-    CBFs = CBF(h,[ego_system.states, agent_system.states])
+    CBFs = CBF(h,[ego_system, agent_system])

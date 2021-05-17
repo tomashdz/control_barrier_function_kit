@@ -1,6 +1,5 @@
 from sympy import Symbol, symbols, Matrix, sin, cos, exp
 from system import *
-from controller import *
 from CBF import *
 import numpy as np
 
@@ -12,12 +11,6 @@ def strList2SympyMatrix(str_list):
         sympySymbols.append(sympySymbol)
     sympyMatrix = Matrix(sympySymbols)
     return sympyMatrix
-
-class Model(object):
-    def __init__(self, states, inputs):
-        self.states = states
-        self.inputs = inputs
-        return
 
 
 def appr_unicycle(states, inputs, l):
@@ -44,7 +37,7 @@ def appr_unicycle(states, inputs, l):
     return dx, f, g
 
 
-class  Agent_break_model(Model):
+def  agent_break(states, inputs, radi, multi):
     """This function defines agent model with the assumption that the agent maintains its velocities
     in the x and y direction unless it is close to the ego when it slows down 
 
@@ -59,16 +52,13 @@ class  Agent_break_model(Model):
     Returns:
         f, dx (symbolic expressions): to describe model of the system as dx = f
     """
-    def __init__(self, states, inputs, radi, multi):
-        if states.shape[0] != 4 or inputs.shape[0] != 2:
-            raise ValueError("appr_unicycle model has 3 states and 2 inputs")
+    if states.shape[0] != 4 or inputs.shape[0] != 2:
+        raise ValueError("appr_unicycle model has 3 states and 2 inputs")
 
-        super(Agent_break_model, self).__init__(states, inputs)
-
-        c = multi
-        self.f = Matrix([states[2],states[3],-exp( c*(radi-(states[0]-inputs[0])**2) ),  -exp( c*(radi-(states[1]-inputs[1])**2) )] )
-        self.dx = self.f
-        return
+    c = multi
+    f = Matrix([states[2],states[3],-exp( c*(radi-(states[0]-inputs[0])**2) ),  -exp( c*(radi-(states[1]-inputs[1])**2) )] )
+    dx = f
+    return dx, f
 
 
 
@@ -99,7 +89,8 @@ if __name__ == '__main__':
     states = strList2SympyMatrix(states_str)
     inputs = strList2SympyMatrix(inputs_str)
 
-    agent_model = Agent_break_model(states, inputs, 1, 10)
+    agent_model = type('',(),{})()
+    ego_model.dx, ego_model.f = agent_break(states, inputs, 1, 10)
 
 
     G = Matrix(np.eye(len(states)))

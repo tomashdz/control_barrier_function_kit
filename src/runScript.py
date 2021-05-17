@@ -72,12 +72,9 @@ if __name__ == '__main__':
 
     states = strList2SympyMatrix(states_str)
     inputs = strList2SympyMatrix(inputs_str)
-
     dx, f, g = appr_unicycle(states, inputs, l)
-
     C = Matrix([[1,0,0],[0,1,0]])
-    dy = C*inputs #TODO: (Tom) is that really dy? it seems x because there are no dt.
-    ego_system = System('ego', states, inputs, dx, dy)
+    ego_system = System('ego', states, inputs, f, g, C)
     print(ego_system.system_details())
 
 
@@ -89,13 +86,12 @@ if __name__ == '__main__':
     inputs = strList2SympyMatrix(inputs_str)
 
     dx, f = agent_break(states, inputs, 1, 10)
-
-    G = Matrix(np.eye(len(states)))
+    g = []
     C = Matrix([[1,0,0,0],[0,1,0,0]])
+    G = Matrix(np.eye(len(states)))
     D = Matrix(np.eye(2))
-    dy = C*inputs #TODO: (Tom) is that really dy? it seems x because there are no dt.
 
-    agent_system = Stochastic('agent', states, inputs, dx, dy, G, D )
+    agent_system = Stochastic('agent', states, inputs, f, g, C, G, D)
     print(agent_system.system_details())
     UnsafeRadius = 0.5
     h = lambda x, y : (x[0]-y[0])**2+(x[1]-y[1])**2-(UnsafeRadius+l)**2

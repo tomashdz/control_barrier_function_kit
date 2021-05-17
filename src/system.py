@@ -1,4 +1,3 @@
-from sympy import Matrix
 import numpy as np
 
 
@@ -14,12 +13,13 @@ class System(object):
         system object: the model describes dx = f(x) + g(x)*inputs , y = Cx where x is the system states
     """
 
-    def __init__(self, name, states, inputs, dx, dy):
+    def __init__(self, name, states, inputs, f, g, C):
         self.name = name        # TODO: Do we need name??
         self.states = states
         self.inputs = inputs
-        self.dx = dx
-        self.dy = dy
+        self.f = f
+        self.g = g
+        self.C = C
         # TODO: Check the observability given C, the assert part may need more attention too
         self.Full_states = True          # If true the states are fully and precisely meaurable and y = x
         nDim = len(states)
@@ -28,12 +28,12 @@ class System(object):
             self.Full_states = False
 
     def system_details(self):
-        return '{}\n {}\n {}\n'.format(self.states, self.inputs, self.Full_states)
+        return '{}\n {}\n {}\n {}\n {}\n {}\n {}\n'.format(self.name, self.states, self.inputs, self.f, self.g, self.C, self.Full_states)
 
 
 class Stochastic(System):
-    def __init__(self, name, states, inputs, dx, dy, G, D):
-        super(Stochastic, self).__init__(name, states, inputs, dx, dy)
+    def __init__(self, name, states, inputs, f, g, C, G, D):
+        super(Stochastic, self).__init__(name, states, inputs, f, g, C)
         #TODO: Add checks to make sure G or D are passed to Stochatic 
         nDim = len(states)
         assert np.array(G).shape[0] == nDim, "inappropriate G shape"   #dx = f(x)+Gdw

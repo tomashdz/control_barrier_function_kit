@@ -1,3 +1,4 @@
+from sympy import symbols, Matrix, sin, cos, exp
 from system import *
 from CBF import *
 import numpy as np
@@ -55,7 +56,7 @@ def  agent_break_model(states, inputs, **kwargs):
             radi = value
         elif key == "mult":
             c = value
-        
+
     try: radi, c
     except: raise ValueError('you need to define radi and mult for this model')
     else:
@@ -72,21 +73,32 @@ if __name__ == '__main__':
     ur_0, ur_1 = symbols('ur_0 ur_1')
     states = [xr_0, xr_1, xr_3]
     inputs = [ur_0, ur_1]
+<<<<<<< HEAD
     l = 0.1     
     f, g = appr_unicycle_model(states, inputs, l = l)
+=======
+    model = type('',(),{})()
+    l = 0.1
+    model.f, model.g, model.dx = appr_unicycle_model(states, inputs, l = l)
+>>>>>>> eb83508442fc6f479fa36772a3bd11815bc49c67
 
     C = [[1,0,0],[0,1,0]]
     ego = System('ego', states, inputs, f, g, C)
     print(ego.system_details())
-    
+
 
     # AGENT
     xo_0, xo_1, xo_2, xo_3 = symbols('xo_0 xo_1 xo_2 xo_3')
     states = [xo_0, xo_1, xo_2, xo_3]
     inputs = [xr_0, xr_1]   #
+<<<<<<< HEAD
     f = agent_break_model(states, inputs, radi = 1, mult = 10)
+=======
+    model = type('',(),{})()
+    model.f, model.dx = agent_break_model(states, inputs, radi = 1, mult = 10)
+>>>>>>> eb83508442fc6f479fa36772a3bd11815bc49c67
 
-   
+
     G = np.eye(len(states))
     C = [[1,0,0,0],[0,1,0,0]]
     D = np.eye(2)

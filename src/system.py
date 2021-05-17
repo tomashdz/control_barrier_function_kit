@@ -23,9 +23,12 @@ class System(object):
         # TODO: Check the observability given C, the assert part may need more attention too
         self.Full_states = True          # If true the states are fully and precisely meaurable and y = x
         nDim = len(states)
-        if self.C.shape != np.eye(nDim).shape or not np.allclose(np.eye(nDim),self.C):
-            assert self.C.shape[1] == nDim, "inappropriate C shape"   #y = CX
-            self.Full_states = False
+        if self.C is None:
+            self.Full_states = True          # If true the states are fully and precisely meaurable and y = x
+        else:
+            if self.C.shape != np.eye(nDim).shape or not np.allclose(np.eye(nDim),self.C):
+                assert self.C.shape[1] == nDim, "inappropriate C shape"   #y = CX   #TODO: (TOM) Is that unacceptable input? if so we need to use error.
+                self.Full_states = False
 
     def system_details(self):
         return '{}\n {}\n {}\n {}\n {}\n {}\n {}\n'.format(self.name, self.states, self.inputs, self.f, self.g, self.C, self.Full_states)

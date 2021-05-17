@@ -86,9 +86,9 @@ if __name__ == '__main__':
     ego_model = type('',(),{})()
     ego_model.dx, ego_model.f, ego_model.g = appr_unicycle(states, inputs, l)
 
-    ego_controller = Controller([[1,0,0],[0,1,0]])
+    C = Matrix([[1,0,0],[0,1,0]])
 
-    ego_system = System('ego', states, inputs, ego_model, ego_controller)
+    ego_system = System('ego', states, inputs, ego_model, C)
     print(ego_system.system_details())
 
 
@@ -103,10 +103,10 @@ if __name__ == '__main__':
 
 
     G = Matrix(np.eye(len(states)))
-    agent_controller = Controller([[1,0,0,0],[0,1,0,0]])
+    C = Matrix([[1,0,0,0],[0,1,0,0]])
     D = Matrix(np.eye(2))
 
-    agent_system = Stochastic('agent', states, inputs, agent_model, agent_controller, G, D )
+    agent_system = Stochastic('agent', states, inputs, agent_model, C, G, D )
     print(agent_system.system_details())
     UnsafeRadius = 0.5
     h = lambda x, y : (x[0]-y[0])**2+(x[1]-y[1])**2-(UnsafeRadius+l)**2

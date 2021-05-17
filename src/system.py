@@ -14,21 +14,21 @@ class System(object):
         system object: the model describes dx = f(x) + g(x)*inputs , y = Cx where x is the system states
     """
 
-    def __init__(self, name, states, inputs, model, controller):
+    def __init__(self, name, states, inputs, model, C):
         self.name = name        # TODO: Do we need name??
         self.states = states
         self.inputs = inputs
         self.model = model
-        self.controller = controller
+        self.C = C
         # TODO: Check the observability given C, the assert part may need more attention too
         self.Full_states = True          # If true the states are fully and precisely meaurable and y = x
         nDim = len(states)
-        if self.controller.C.shape != np.eye(nDim).shape or not np.allclose(np.eye(nDim),self.controller.C):
-            assert self.controller.C.shape[1] == nDim, "inappropriate C shape"   #y = CX
+        if self.C.shape != np.eye(nDim).shape or not np.allclose(np.eye(nDim),self.C):
+            assert self.C.shape[1] == nDim, "inappropriate C shape"   #y = CX
             self.Full_states = False
 
     def system_details(self):
-        return '{}\n {}\n {}\n {}\n {}\n'.format(self.states, self.inputs, self.Full_states, self.model.__dict__, self.controller.__dict__)
+        return '{}\n {}\n {}\n {}\n'.format(self.states, self.inputs, self.Full_states, self.model.__dict__)
 
 
 class Stochastic(System):
@@ -40,8 +40,8 @@ class Stochastic(System):
         self.G = G
 
         #TODO: (Tom) Tom misunderstood the check code
-        try: self.controller.C
-        except: self.controller.C = np.eye(nDim)
-        assert np.array(D).shape[0] == self.controller.C.shape[0]
+        try: self.C
+        except: self.C = np.eye(nDim)
+        assert np.array(D).shape[0] == self.C.shape[0]
         self.D = D
         self.Full_states = False

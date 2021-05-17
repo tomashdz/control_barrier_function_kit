@@ -14,11 +14,11 @@ class System(object):
         system object: the model describes dx = f(x) + g(x)*inputs , y = Cx where x is the system states
     """
 
-    def __init__(self, name, states, inputs, model, C):
+    def __init__(self, name, states, inputs, dx, C):
         self.name = name        # TODO: Do we need name??
         self.states = states
         self.inputs = inputs
-        self.model = model
+        self.dx = dx
         self.C = C
         # TODO: Check the observability given C, the assert part may need more attention too
         self.Full_states = True          # If true the states are fully and precisely meaurable and y = x
@@ -28,12 +28,12 @@ class System(object):
             self.Full_states = False
 
     def system_details(self):
-        return '{}\n {}\n {}\n {}\n'.format(self.states, self.inputs, self.Full_states, self.model.__dict__)
+        return '{}\n {}\n {}\n'.format(self.states, self.inputs, self.Full_states)
 
 
 class Stochastic(System):
-    def __init__(self, name, states, inputs, model, controller, G, D):
-        super(Stochastic, self).__init__(name, states, inputs, model, controller)
+    def __init__(self, name, states, inputs, dx, C, G, D):
+        super(Stochastic, self).__init__(name, states, inputs, dx, C)
         #TODO: Add checks to make sure G or D are passed to Stochatic 
         nDim = len(states)
         assert np.array(G).shape[0] == nDim, "inappropriate G shape"   #dx = f(x)+Gdw

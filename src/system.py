@@ -34,17 +34,15 @@ class System(object):
 class Stochastic(System):
     def __init__(self, name, states, inputs, f, g, C, G, D):
         super(Stochastic, self).__init__(name, states, inputs, f, g, C)
-        #TODO: Add checks to make sure G or D are passed to Stochatic 
-        nDim = len(states)
-        assert np.array(G).shape[0] == nDim, "inappropriate G shape"   #dx = f(x)+Gdw
-        self.G = G
-
-        #TODO: (Tom) Tom misunderstood the check code
-        try: self.C
-        except: self.C = np.eye(nDim)
-        assert np.array(D).shape[0] == self.C.shape[0]
         self.D = D
-        self.Full_states = False
+        self.G = G
+        #TODO: Add checks to make sure G or D are passed to Stochatic 
+        #TODO: (Tom) Tom misunderstood the check code
+        #nDim = len(states)
+        #assert np.array(G).shape[0] == nDim, "inappropriate G shape"   #dx = f(x)+Gdw
+        #self.C = np.eye(nDim):
+        #    assert np.array(D).shape[0] == self.C.shape[0]
+        #    self.Full_states = False
 
     def system_details(self):
         superOut = super(Stochastic, self).system_details()

@@ -14,21 +14,24 @@ class System(object):
     """
 
     def __init__(self, name, states, inputs, f, g, C):
+        # TODO: Check the observability given C, the assert part may need more attention too
+        Full_states = True          # If true the states are fully and precisely meaurable and y = x
+        nDim = len(states)
+        if C is None:
+            Full_states = True          # If true the states are fully and precisely meaurable and y = x
+        else:
+            if C.shape != np.eye(nDim).shape or not np.allclose(np.eye(nDim), C):
+                assert C.shape[1] == nDim, "inappropriate C shape"   #y = CX   #TODO: (TOM) Is that unacceptable input? if so we need to use error.
+                Full_states = False
+
         self.name = name        # TODO: Do we need name??
         self.states = states
         self.inputs = inputs
         self.f = f
         self.g = g
         self.C = C
-        # TODO: Check the observability given C, the assert part may need more attention too
-        self.Full_states = True          # If true the states are fully and precisely meaurable and y = x
-        nDim = len(states)
-        if self.C is None:
-            self.Full_states = True          # If true the states are fully and precisely meaurable and y = x
-        else:
-            if self.C.shape != np.eye(nDim).shape or not np.allclose(np.eye(nDim),self.C):
-                assert self.C.shape[1] == nDim, "inappropriate C shape"   #y = CX   #TODO: (TOM) Is that unacceptable input? if so we need to use error.
-                self.Full_states = False
+        self.Full_states = Full_states
+
 
     def system_details(self):
         return '{}\n {}\n {}\n {}\n {}\n {}\n {}\n'.format(self.name, self.states, self.inputs, self.f, self.g, self.C, self.Full_states)
@@ -37,22 +40,23 @@ class System(object):
 class Stochastic(System):
     def __init__(self, name, states, inputs, f, g, C, G, D):
         super(Stochastic, self).__init__(name, states, inputs, f, g, C)
-        self.D = D
-        self.G = G
         #TODO: Add checks to make sure G or D are passed to Stochatic
         nDim = len(self.states)
-        if self.G is None and self.D is None:
+        if G is None and D is None:
             raise ValueError("Did you mean to create a deterministic system?")
-        if self.G is not None:
+        if G is not None:
             #TODO: (TOM) Is that unacceptable input? if so we need to use error.
             assert np.array(G).shape[0] == nDim, "inappropriate G shape"   #dx = f(x)+Gdw
             self.Full_states = False
-        if self.D is not None:
+        if D is not None:
             #TODO: (TOM) Is that unacceptable input? if so we need to use error.
-            if self.C is None:
+            if C is None:
                 self.C = np.eye(self.nDim)
-            assert np.array(D).shape[0] == self.C.shape[0]
+            assert np.array(D).shape[0] == C.shape[0]
             self.Full_states = False
+
+        self.G = G
+        self.D = D
 
     def system_details(self):
         superOut = super(Stochastic, self).system_details()

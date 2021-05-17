@@ -83,7 +83,7 @@ if __name__ == '__main__':
     states = strList2SympyMatrix(states_str)
     inputs = strList2SympyMatrix(inputs_str)
     f = agent_break(states, inputs, 1, 10)
-    g = []
+    g = None
     C = Matrix([[1,0,0,0],[0,1,0,0]])
     G = Matrix(np.eye(len(states)))
     D = Matrix(np.eye(2))

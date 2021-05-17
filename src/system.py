@@ -13,27 +13,37 @@ class System(object):
     Returns:
         system object: the model describes dx = f(x) + g(x)*inputs , y = Cx where x is the system states 
     """
+    ####TODO:TODO: check whether you need Matrix here or not
 
-    Full_states = True          # If true the states are fully and precisely meaurable and y = x
-    def __init__(self, name, sys_type, states, inputs, model,**kwargs):
+    def __init__(self, name, states, inputs, f, g = None, C = None): 
         self.name = name        # TODO: Do we need name??
-        self.type = sys_type    # agent or ego:  Describes whether we have control or not, do we need?
-        self.states = states
+        self.states = Matrix(states)
         self.nDim = len(states)
-        self.inputs = inputs
-        self.model = model 
-    # TODO: Check the observability given C, the assert part may need more attention too   
-        for key, value in kwargs.items():
-            if key == "C":
-                C = value
-                if np.array(C).shape != np.eye(self.nDim).shape or not p.allclose(np.eye(self.nDim),C):
-                    assert np.array(C).shape[1] == self.nDim, "inappropriate C shape"   #y = CX
-                    self.model.C = Matrix(C)
-                    self.Full_states = False
-
+        self.inputs = Matrix(inputs)
+        self.model = type('',(),{})()
+        self.model.f = Matrix(f)
+        if g is not None:
+            self.model.g = Matrix(g)
+            try: 
+                self.model.f+self.model.g*self.inputs
+            except: 
+                raise ValueError("Inappropriate g or inputs sizes")
+            self.model.dx = self.model.f+self.model.g*self.inputs
+        else:
+            self.model.g = None
+            self.model.dx = self.model.f
+         # TODO: Check the observability given C, the assert part may need more attention too   
+        if C is None:
+            self.model.C = C
+            self.Full_states = True          # If true the states are fully and precisely meaurable and y = x
+        else:
+            if np.array(C).shape != np.eye(self.nDim).shape or not p.allclose(np.eye(self.nDim),C):
+                assert np.array(C).shape[1] == self.nDim, "inappropriate C shape"   #y = CX
+                self.model.C = Matrix(C)
+                self.Full_states = False
 
     def system_details(self):
-        return '{} {} {} {} {}'.format(self.type, self.states, self.inputs, self.Full_states, self.model.__dict__)
+        return '{} {} {} {}'.format(self.states, self.inputs, self.Full_states, self.model.__dict__)
 
     # def add_output_info(self, C): 
     #     if np.array(C).shape != np.eye(self.nDim).shape or not p.allclose(np.eye(self.nDim),C):
@@ -48,21 +58,22 @@ class System(object):
 
 
 class Stochastic(System):
-    def __init__(self, name, sys_type, states, inputs, model,**kwargs):
-        super(Stochastic, self).__init__(name, sys_type, states, inputs, model,**kwargs)
-        #TODO: Add checks to make sure G or D are passed to Stochatic 
-        for key, value in kwargs.items():
-            if key == "G":
-                G = value
-                assert np.array(G).shape[0] == self.nDim, "inappropriate G shape"   #dx = f(x)+Gdw
-                self.model.G = Matrix(G)
-            elif key == "D":
-                D = value
-                try: self.model.C
-                except: self.model.C = np.eye(self.nDim)
-                assert np.array(D).shape[0] == self.model.C.shape[0]
-                self.model.D = Matrix(D)
-                self.Full_states = False
+    def __init__(self, name, states, inputs, f, g = None, C = None, G = None, D= None): # G, and D
+        super(Stochastic, self).__init__(name, states, inputs, f, g , C)
+        if G is None and D is None:
+            raise ValueError("Did you mean to create a deterministic system?")
+        
+        if G is not None:
+            assert np.array(G).shape[0] == self.nDim, "inappropriate G shape"   #dx = f(x)+Gdw
+            self.model.G = Matrix(G)
+        else:
+            self.model.G = G
+        if D is not None:
+            if self.model.C is None:
+                self.model.C = np.eye(self.nDim)
+            assert np.array(D).shape[0] == self.model.C.shape[0]
+            self.model.D = Matrix(D)
+            self.Full_states = False
 
 
 

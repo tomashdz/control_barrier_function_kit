@@ -25,12 +25,11 @@ def  appr_unicycle_model(states, inputs, **kwargs):
         if key == "l":
             l = value
     try: l
-    except NameError: ValueError('you need to define l for this model')
+    except: raise ValueError('you need to define l for this model')
     else:
         f = Matrix([0,0,0])
         g = Matrix([[cos(states[2]), -l*sin(states[2])], [sin(states[2]), l*cos(states[2])], [0, 1]])
-        dx = f+g*inputs
-    return f,g,dx
+    return f,g
 
 def  agent_break_model(states, inputs, **kwargs):
     """This function defines agent model with the assumption that the agent maintains its velocities
@@ -58,12 +57,10 @@ def  agent_break_model(states, inputs, **kwargs):
             c = value
         
     try: radi, c
-    except NameError: ValueError('you need to define l for this model')
+    except: raise ValueError('you need to define radi and mult for this model')
     else:
         f = Matrix([states[2],states[3],-exp( c*(radi-(states[0]-inputs[0])**2) ),  -exp( c*(radi-(states[1]-inputs[1])**2) )] )
-        dx = f
-    return f,dx
-
+    return f
 
 
 
@@ -75,12 +72,11 @@ if __name__ == '__main__':
     ur_0, ur_1 = symbols('ur_0 ur_1')
     states = [xr_0, xr_1, xr_3]
     inputs = [ur_0, ur_1]
-    model = type('',(),{})()
     l = 0.1     
-    model.f, model.g, model.dx = appr_unicycle_model(states, inputs, l = l)
+    f, g = appr_unicycle_model(states, inputs, l = l)
 
     C = [[1,0,0],[0,1,0]]
-    ego = System('ego','ego', states, inputs, model, C = C)
+    ego = System('ego', states, inputs, f, g, C)
     print(ego.system_details())
     
 
@@ -88,19 +84,24 @@ if __name__ == '__main__':
     xo_0, xo_1, xo_2, xo_3 = symbols('xo_0 xo_1 xo_2 xo_3')
     states = [xo_0, xo_1, xo_2, xo_3]
     inputs = [xr_0, xr_1]   #
-    model = type('',(),{})()     
-    model.f, model.dx = agent_break_model(states, inputs, radi = 1, mult = 10)
+    f = agent_break_model(states, inputs, radi = 1, mult = 10)
 
    
     G = np.eye(len(states))
     C = [[1,0,0,0],[0,1,0,0]]
     D = np.eye(2)
 
-    agent = Stochastic('agent','agent', states, inputs, model, C = C, G = G , D= D )
+    agent = Stochastic('agent',states, inputs, f, None, C, G = G , D= D )
     print(agent.system_details())
     UnsafeRadius = 0.5
-    h = lambda x, y : (x[0]-y[0])**2+(x[1]-y[1])**2-(UnsafeRadius+l)**2
-    CBFs = CBF(h,[ego.states, agent.states])
+    h = lambda x, y, UnsafeRadius : (x[0]-y[0])**2+(x[1]-y[1])**2-(UnsafeRadius+l)**2
+    h1 = lambda x, y: h(x,y,UnsafeRadius)
+    CBFs = CBF(h1,[ego.states, agent.states])
+
+    h = lambda x, minx: (x[0]-minx)
+    h = lambda x, maxx: (maxx-x[0])
+
+    # B = ((xr0 - cx)/rad_x)**2 + ((xr1 - cy)/rad_y)**2 - 1
 
 
 

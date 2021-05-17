@@ -13,3 +13,7 @@ class CBF(object):
         pass
     def compute_lambda_h(self):
         pass
+    def add_constraint(self):
+        pass
+    def remove_constraint(self):
+        pass

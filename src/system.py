@@ -16,6 +16,12 @@ class System(object):
         # TODO: Check the observability given C, the assert part may need more attention too
         Full_states = True          # If true the states are fully and precisely meaurable and y = x
         nDim = len(states)
+        if g is not None:
+            try:
+                f+g*inputs
+            except:
+                raise ValueError("Inappropriate g or inputs sizes")
+
         if C is None:
             Full_states = True          # If true the states are fully and precisely meaurable and y = x
         else:

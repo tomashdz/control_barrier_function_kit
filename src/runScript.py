@@ -3,7 +3,6 @@ from system import *
 from CBF import *
 import numpy as np
 
-#TODO: (Tom) this should be temporal
 def strList2SympyMatrix(str_list):
     sympySymbols = []
     for istr in str_list:
@@ -31,7 +30,7 @@ def appr_unicycle(states, inputs, l):
     if states.shape[0] != 3 or inputs.shape[0] != 2:
         raise ValueError("appr_unicycle model has 3 states and 2 inputs")
 
-    f = Matrix([0,0,0])    #TODO: (Tom) why here is empty?
+    f = Matrix([0,0,0])
     g = Matrix([[cos(states[2]), -l*sin(states[2])], [sin(states[2]), l*cos(states[2])], [0, 1]])
     return f, g
 

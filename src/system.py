@@ -2,8 +2,6 @@ from sympy import symbols, Matrix, sin, cos, lambdify, exp, sqrt, log, diff
 import numpy as np
 
 
-# TODO: Add description to functions
-
 class System(object):
     
     """
@@ -43,7 +41,7 @@ class System(object):
                 self.Full_states = False
 
     def system_details(self):
-        return '{} {} {} {}'.format(self.states, self.inputs, self.Full_states, self.model.__dict__)
+        return '{}\n {}\n {}\n {}\n'.format(self.states, self.inputs, self.Full_states, self.model.__dict__)
 
     # def add_output_info(self, C): 
     #     if np.array(C).shape != np.eye(self.nDim).shape or not p.allclose(np.eye(self.nDim),C):

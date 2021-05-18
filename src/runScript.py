@@ -77,7 +77,7 @@ if __name__ == '__main__':
     f, g = appr_unicycle_model(states, inputs, l = l)
 
     C = [[1,0,0],[0,1,0]]
-    ego = System('ego', states, inputs, f, g, C)
+    ego = System('ego', states, inputs, f, g)
     print(ego.system_details())
 
 
@@ -92,12 +92,18 @@ if __name__ == '__main__':
     C = [[1,0,0,0],[0,1,0,0]]
     D = np.eye(2)
 
-    agent = Stochastic('agent',states, inputs, f, None, C, G = G , D= D )
+    # agent = Stochastic('agent',states, inputs, f, None, C, G = G , D= D)
+    agent = System('agent',states, inputs, f)
     print(agent.system_details())
     UnsafeRadius = 0.5
+
+    # Define h such that h(x)<=0 defines unsafe region
     h = lambda x, y, UnsafeRadius : (x[0]-y[0])**2+(x[1]-y[1])**2-(UnsafeRadius+l)**2
     h1 = lambda x, y: h(x,y,UnsafeRadius)
-    CBFs = CBF(h1,[ego.states, agent.states])
+    B = lambda x, y: -h(x,y,UnsafeRadius)
+    CBF1 = CBF(h1, B, ego, agent)
+    print(CBF1.details())
+
 
     h = lambda x, minx: (x[0]-minx)
     h = lambda x, maxx: (maxx-x[0])

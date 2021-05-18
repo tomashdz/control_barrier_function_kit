@@ -93,6 +93,9 @@ if __name__ == '__main__':
     # Define h such that h(x)<=0 defines unsafe region
     h = lambda x, y, UnsafeRadius : (x[0]-y[0])**2+(x[1]-y[1])**2-(UnsafeRadius+l)**2
     h1 = lambda x, y: h(x,y,UnsafeRadius)
+    B = lambda x, y: -h(x,y,UnsafeRadius)
+    CBF1 = CBF(h1, B, ego, agent)
+    print(CBF1.details())
     CBFs = CBF(h1,[ego_system, agent_system])
 
     h = lambda x, minx: (x[0]-minx)

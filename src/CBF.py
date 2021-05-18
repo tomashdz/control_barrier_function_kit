@@ -36,3 +36,11 @@ class CBF(object):
     #     pass
     # def remove_constraint(self):
     #     pass
+
+class Control_CBF(object):
+    def __init__():
+        self.CBF =
+        self.ego = 
+        self.agents = 
+        self.P = 
+        self.Q = 

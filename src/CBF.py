@@ -8,7 +8,7 @@ class CBF(object):
         self.BF = BF
         self.states = [ego.states, agent.states]
         self.compute_LHS_RHS(ego, agent)
-        
+        self.agent = agent
         # self.B = exp(-gamma*Uset)
 
 
@@ -38,7 +38,7 @@ class CBF(object):
     #     pass
 
 class Control_CBF(object):
-    def __init__(ego, agent_CBF, goal_set_func, P = None, Q = None ):
+    def __init__(self, ego, CBF, goal_set_func, P = None, Q = None ):
 
         # # publisher to send vw order to HSR
         # self.vw_publisher = rospy.Publisher('/hsrb/command_velocity', Twist, queue_size=10)
@@ -53,14 +53,8 @@ class Control_CBF(object):
         # # listener of tf.
         # self.tfListener = tf.TransformListener()
 
-
-
-        for j in agent_CBF:
-            if type(j) is not tuple:
-                raise ValueError("second argument should be a list of tuples") 
-
         self.ego = ego
-        self.agent_CBF = agent_CBF
+        self.CBF = CBF
         self.goal_set_func = goal_set_func
         self.P = 0
         self.Q = 0

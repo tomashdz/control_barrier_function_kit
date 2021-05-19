@@ -102,6 +102,6 @@ if __name__ == '__main__':
     # Goal set description
     GoalCenter = np.array([0, 0])
     rGoal = np.power(0.5,2)
-    h = lambda x: (x[0]]-GoalCenter[0])**2+(x[1]-GoalCenter[1])**2-rGoal
+    goal_set_func = lambda x: (x[0]-GoalCenter[0])**2+(x[1]-GoalCenter[1])**2-rGoal
 
-    Control_CBF(ego_system,(agent_system,CBF1), goal_set_func)
+    Control_CBF(ego_system, CBF1, goal_set_func)

@@ -1,3 +1,4 @@
+from sympy import symbols, Matrix, sin, cos, lambdify, exp, sqrt, log, diff
 import numpy as np
 
 
@@ -12,29 +13,34 @@ class System(object):
     """
     ####TODO:TODO: check whether you need Matrix here or not
 
-    def __init__(self, name, states, inputs, f, g, C):
+    def __init__(self, name, states, inputs, f, g = None, C = None): 
         # TODO: Check the observability given C, the assert part may need more attention too
         Full_states = True          # If true the states are fully and precisely meaurable and y = x
-        nDim = len(states)
-        if g is not None:
-            try:
-                f+g*inputs
-            except:
-                raise ValueError("Inappropriate g or inputs sizes")
-
-        if C is None:
-            Full_states = True          # If true the states are fully and precisely meaurable and y = x
-        else:
-            if C.shape != np.eye(nDim).shape or not np.allclose(np.eye(nDim), C):
-                assert C.shape[1] == nDim, "inappropriate C shape"   #y = CX   #TODO: (TOM) Is that unacceptable input? if so we need to use error.
-                Full_states = False
-
+        self.nDim = len(states)
         self.name = name        # TODO: Do we need name??
         self.states = states
         self.inputs = inputs
         self.f = f
-        self.g = g
-        self.C = C
+
+        if g is not None:
+            self.g = Matrix(g)
+            try: 
+                self.f+self.g*self.inputs
+            except: 
+                raise ValueError("Inappropriate g or inputs sizes")
+            self.dx = self.f+self.g*self.inputs
+        else:
+            self.g = None
+            self.dx = self.f
+         # TODO: Check the observability given C, the assert part may need more attention too   
+        if C is None:
+            self.C = C
+        else:
+            if np.array(C).shape != np.eye(self.nDim).shape or not p.allclose(np.eye(self.nDim),C):
+                assert np.array(C).shape[1] == self.nDim, "inappropriate C shape"   #y = CX
+                self.C = Matrix(C)
+                Full_states = False
+
         self.Full_states = Full_states
 
 
@@ -43,25 +49,26 @@ class System(object):
 
 
 class Stochastic(System):
-    def __init__(self, name, states, inputs, f, g, C, G, D):
-        super(Stochastic, self).__init__(name, states, inputs, f, g, C)
-        #TODO: Add checks to make sure G or D are passed to Stochatic
+    def __init__(self, name, states, inputs, f, g = None, C = None, G = None, D= None): # G, and D
+        super(Stochastic, self).__init__(name, states, inputs, f, g , C)
         nDim = len(self.states)
         if G is None and D is None:
             raise ValueError("Did you mean to create a deterministic system?")
+        
         if G is not None:
-            #TODO: (TOM) Is that unacceptable input? if so we need to use error.
             assert np.array(G).shape[0] == nDim, "inappropriate G shape"   #dx = f(x)+Gdw
-            self.Full_states = False
+            self.G = Matrix(G)
+        else:
+            self.G = G
         if D is not None:
-            #TODO: (TOM) Is that unacceptable input? if so we need to use error.
-            assert D.shape[0] == C.shape[0]
-            self.Full_states = False
-
-        self.G = G
-        self.D = D
+            if self.C is None:
+                self.C = np.eye(nDim)
+            assert np.array(D).shape[0] == self.model.C.shape[0]
+            self.D = Matrix(D)
+            self.Full_states = False   
 
     def system_details(self):
         superOut = super(Stochastic, self).system_details()
         out = superOut + '{}\n {}\n'.format(self.D, self.G)
         return out
+

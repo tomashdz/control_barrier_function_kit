@@ -1,4 +1,4 @@
-from sympy import Symbol, symbols, Matrix, sin, cos, exp
+from sympy import symbols, Matrix, sin, cos, lambdify, exp, sqrt, log, diff
 from system import *
 from CBF import *
 import numpy as np
@@ -6,7 +6,7 @@ import numpy as np
 def strList2SympyMatrix(str_list):
     sympySymbols = []
     for istr in str_list:
-        sympySymbol = Symbol(istr)
+        sympySymbol = symbols(istr)
         sympySymbols.append(sympySymbol)
     sympyMatrix = Matrix(sympySymbols)
     return sympyMatrix
@@ -19,12 +19,8 @@ def appr_unicycle(states, inputs, l):
         states_str (list): name list of system states 
         inputs_str (list): name list of system inputs
 
-    Raises:
-        ValueError: Raised when l = value is not given in the kwargs or 
-                    when the size of states and inputs do not match the model
-
     Returns:
-        f, g, dx (symbolic expressions): to describe model of the system as dx = f+g*input
+        f, g (symbolic expressions): to describe model of the system as dx = f+g*input
     """
 
     if states.shape[0] != 3 or inputs.shape[0] != 2:
@@ -43,12 +39,8 @@ def  agent_break(states, inputs, radi, multi):
         states (Sympy matrix): vector of symbolic system states 
         inputs (Sympy matrix): vector of symbolic system inputs
 
-    Raises:
-        ValueError: Raised when value of radi and c is not given in the kwargs or 
-                    when the size of states and inputs do not match the model
-
     Returns:
-        f, dx (symbolic expressions): to describe model of the system as dx = f
+        f (symbolic expressions): to describe model of the system as dx = f
     """
     if states.shape[0] != 4 or inputs.shape[0] != 2:
         raise ValueError("appr_unicycle model has 3 states and 2 inputs")
@@ -70,7 +62,10 @@ if __name__ == '__main__':
     l = 0.1
     f, g = appr_unicycle(states, inputs, l)
     C = Matrix([[1,0,0],[0,1,0]])
-    ego_system = System('ego', states, inputs, f, g, C)
+    # ego_system = System('ego', states, inputs, f, g)
+    ego_system = System('HSR', states, inputs, f, g, C)   
+    
+
     print(ego_system.system_details())
 
 
@@ -85,20 +80,28 @@ if __name__ == '__main__':
     C = Matrix([[1,0,0,0],[0,1,0,0]])
     G = Matrix(np.eye(len(states)))
     D = Matrix(np.eye(2))
-    agent_system = Stochastic('agent', states, inputs, f, g, C, G, D)
+    # agent = Stochastic('agent',states, inputs, f, None, C, G = G , D= D)
+    agent_system = System('human',states, inputs, f)   
+    #One agent instance is enough for all agents of the same type, if we have other types of agents,
+    #we can create that, we may need to think about a way to assign agents to system
     print(agent_system.system_details())
 
-    UnsafeRadius = 0.5
 
+    UnsafeRadius = 0.5
     # Define h such that h(x)<=0 defines unsafe region
     h = lambda x, y, UnsafeRadius : (x[0]-y[0])**2+(x[1]-y[1])**2-(UnsafeRadius+l)**2
     h1 = lambda x, y: h(x,y,UnsafeRadius)
     B = lambda x, y: -h(x,y,UnsafeRadius)
-    CBF1 = CBF(h1, B, ego, agent)
+    CBF1 = CBF(h1, B, ego_system, agent_system)
     print(CBF1.details())
-    CBFs = CBF(h1,[ego_system, agent_system])
 
     h = lambda x, minx: (x[0]-minx)
     h = lambda x, maxx: (maxx-x[0])
-
     # B = ((xr0 - cx)/rad_x)**2 + ((xr1 - cy)/rad_y)**2 - 1
+
+    # Goal set description
+    GoalCenter = np.array([0, 0])
+    rGoal = np.power(0.5,2)
+    h = lambda x: (x[0]]-GoalCenter[0])**2+(x[1]-GoalCenter[1])**2-rGoal
+
+    Control_CBF(ego_system,(agent_system,CBF1), goal_set_func)

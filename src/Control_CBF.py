@@ -1,18 +1,5 @@
-class data(object):
-    def __init__(self):
-        self.ego 
-        self.agent
-        self.time
-        self.command
-    def add_data(self, ego_state, agents_states, time, command):
-        self.ego.append(ego_state)
-        self.agent.append(agents_states)
-        self.time.append(time)
-        self.command.append(command)
-
-class Control_CBF(object):
-    def __init__(self, ego, CBF, goal_set_func, P = None, Q = None ):
-
+class sensor(object):
+    def __init__():
         # # publisher to send vw order to HSR
         # self.vw_publisher = rospy.Publisher('/hsrb/command_velocity', Twist, queue_size=10)
         # # subscriber for Gazebo info.
@@ -26,16 +13,14 @@ class Control_CBF(object):
         # # listener of tf.
         # self.tfListener = tf.TransformListener()
 
-        # OR we can create another object/change it somehow s.t we do not need to change inside the class
-        #like a sensing object or something like that
 
-
+class Control_CBF(object):
+    def __init__(self, ego, CBF, goal_set_func, P = None, Q = None ):  # make sure ego is the system with which CBF is created 
         self.ego = ego
         self.CBF = CBF
         self.goal_set_func = goal_set_func
         self.P = 0
         self.Q = 0
-        self.data = data()
         
     def cbf_controller_compute(self,data):
         pass

@@ -21,7 +21,8 @@ class System(object):
         self.states = states
         self.inputs = inputs
         self.f = f
-
+        self.state_traj = []
+        self.control_traj = []
         if g is not None:
             self.g = Matrix(g)
             try: 
@@ -42,11 +43,15 @@ class System(object):
                 Full_states = False
 
         self.Full_states = Full_states
+    
+    def add_state_traj(self, state, time):
+        self.state_traj.append([time, state[:]])
 
+    def add_control_traj(self, control, time):
+        self.control_traj.append([time, command[:]])
 
     def system_details(self):
         return '{}\n {}\n {}\n {}\n {}\n {}\n {}\n'.format(self.name, self.states, self.inputs, self.f, self.g, self.C, self.Full_states)
-
 
 class Stochastic(System):
     def __init__(self, name, states, inputs, f, g = None, C = None, G = None, D= None): # G, and D
@@ -65,8 +70,10 @@ class Stochastic(System):
                 self.C = np.eye(nDim)
             assert np.array(D).shape[0] == self.model.C.shape[0]
             self.D = Matrix(D)
-            self.Full_states = False   
+            self.Full_states = False 
 
+
+    
     def system_details(self):
         superOut = super(Stochastic, self).system_details()
         out = superOut + '{}\n {}\n'.format(self.D, self.G)

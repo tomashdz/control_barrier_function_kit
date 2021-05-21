@@ -29,7 +29,7 @@ class CBF(object):
 
         # BF_d2 =  self.BF.diff(self.x_o_s,2)
         # UnsafeInfo.CBF = lambdify([self.x_r_s,self.x_o_s], CBF)
-
+    
     def details(self):
         return '{}\n {}\n {}\n'.format(self.h(*self.states), self.BF(*self.states), self.states)
     # def add_constraint(self):

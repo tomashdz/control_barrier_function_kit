@@ -1,6 +1,9 @@
+import argparse
+import rospy
 from sympy import symbols, Matrix, sin, cos, lambdify, exp, sqrt, log, diff
 from system import *
 from CBF import *
+# from Control_CBF import *
 import numpy as np
 
 def strList2SympyMatrix(str_list):
@@ -65,8 +68,11 @@ if __name__ == '__main__':
     # ego_system = System('ego', states, inputs, f, g)
     ego_system = System('HSR', states, inputs, f, g, C)   
     
-
     print(ego_system.system_details())
+
+
+
+
 
 
     # AGENT
@@ -85,6 +91,24 @@ if __name__ == '__main__':
     #One agent instance is enough for all agents of the same type, if we have other types of agents,
     #we can create that, we may need to think about a way to assign agents to system
     print(agent_system.system_details())
+
+    try:
+        rospy.init_node('agent_system')
+        agent = Agent()
+        rospy.Timer(rospy.Duration(1.0/freq), agent.control_callback)
+        rospy.spin()
+
+
+
+        rospy.init_node('cbf_controller')
+        rospy.init_node(args.model_name[0]+'_controller')
+        agent = Agent(args.model_name[0])
+        rospy.Timer(rospy.Duration(1.0/freq), agent.control_callback)
+        rospy.spin()
+    except rospy.ROSInterruptException:
+        pass
+
+
 
 
     UnsafeRadius = 0.5

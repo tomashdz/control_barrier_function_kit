@@ -8,7 +8,7 @@
 	</include>
 
 	<!-- spawn agent -->
-	<include file="$(find cbf_ros)/launch/spawn_turtlebot3.launch">
+	<include file="$(find Risk-based-Stochastic-Control-Barrier-Functions-)/launch/spawn_turtlebot3.launch">
     </include>
 
 </launch>

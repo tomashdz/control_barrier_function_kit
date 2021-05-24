@@ -13,7 +13,7 @@ class System(object):
     """
     ####TODO:TODO: check whether you need Matrix here or not
 
-    def __init__(self, name, states, inputs, f, g = None, C = None): 
+    def __init__(self, name, states, inputs, f, g = None, C = None, connection = None): 
         # TODO: Check the observability given C, the assert part may need more attention too
         Full_states = True          # If true the states are fully and precisely meaurable and y = x
         self.nDim = len(states)
@@ -79,3 +79,10 @@ class Stochastic(System):
         out = superOut + '{}\n {}\n'.format(self.D, self.G)
         return out
 
+
+
+
+class Connected_system(System):
+    def __init__(self,system,connection):
+        self.system = system
+        self.connection = connection

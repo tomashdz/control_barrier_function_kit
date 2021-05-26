@@ -1,9 +1,11 @@
 import argparse
 import rospy
+import re
+
 from sympy import symbols, Matrix, sin, cos, lambdify, exp, sqrt, log, diff
 from system import *
 from CBF import *
-# from Control_CBF import *
+from Control_CBF import *
 import numpy as np
 
 
@@ -66,45 +68,42 @@ def  agent_break(states, inputs, radi, multi):
     return f
 
 
-def HSR_connections():
-        # Reading for HSR
-    HSRconnection = type('', (), {})()
-    HSRconnection.vw_publisher = rospy.Publisher('/hsrb/command_velocity', Twist, queue_size=10)
-    # subscriber for Gazebo info.
-    rospy.wait_for_service ('/gazebo/get_model_state')
-    HSRconnection.get_model_pro = rospy.ServiceProxy('/gazebo/get_world_properties', GetWorldProperties)
-    HSRconnection.get_model_srv = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
-    HSRconnection.tOdometry_subscriber = rospy.Subscriber('/hsrb/odom_ground_truth', Odometry, self.tOdometry_callback, queue_size=10)
-    HSRconnection.tOdometry = Odometry()
-    HSRconnection.odometry_subscriber = rospy.Subscriber('/global_pose', PoseStamped, self.odometry_callback, queue_size=10)
-    HSRconnection.poseStamped = PoseStamped()
-    # listener of tf.
-    HSRconnection.tfListener = tf.TransformListener()
-    return HSRconnection
+# def HSR_connections():
+#         # Reading for HSR
+#     HSRconnection = type('', (), {})()
+#     # HSRconnection.vw_publisher = rospy.Publisher('/hsrb/command_velocity', Twist, queue_size=10)
+#     # subscriber for Gazebo info.
+#     # rospy.wait_for_service ('/gazebo/get_model_state')
+#     # HSRconnection.get_model_pro = rospy.ServiceProxy('/gazebo/get_world_properties', GetWorldProperties)
+#     # HSRconnection.get_model_srv = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
+#     # HSRconnection.tOdometry_subscriber = rospy.Subscriber('/hsrb/odom_ground_truth', Odometry, tOdometry_callback, queue_size=10)
+#     HSRconnection.tOdometry = Odometry()
+#     # HSRconnection.odometry_subscriber = rospy.Subscriber('/global_pose', PoseStamped, odometry_callback, queue_size=10)
+#     HSRconnection.poseStamped = PoseStamped()
+#     # listener of tf.
+#     HSRconnection.tfListener = tf.TransformListener()
+#     return HSRconnection
 
+# def agent_connections():
+#     rospy.wait_for_service ('/gazebo/get_model_state')
+#     Agentconnection = type('', (), {})()
+#     Agentconnection.get_model_srv = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
+#     Agentconnection.set_model_srv = rospy.ServiceProxy('/gazebo/set_model_state', SetModelState)
 
-def agent_connections():
-    rospy.wait_for_service ('/gazebo/get_model_state')
-    Agentconnection = type('', (), {})()
-    Agentconnection.get_model_srv = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
-    Agentconnection.set_model_srv = rospy.ServiceProxy('/gazebo/set_model_state', SetModelState)
+#     Agentconnection.model = GetModelStateRequest()
+#     Agentconnection.model.model_name = model_name
+#     return Agentconnection
 
-    Agentconnection.model = GetModelStateRequest()
-    Agentconnection.model.model_name = model_name
-    return Agentconnection
-
-
-
-
-def tOdometry_callback(self, odometry):
+def tOdometry_callback(odometry):
     #TODO: you need to implement here to transfer the subscribed data to somewhere you want to use.
     #self.odometry = odometry # this odometry's coodination is \map
+    Control_CBF.update_odometry(odometry)
     pass
 
 
-def odometry_callback(self, poseStamped):
+def odometry_callback(poseStamped):
     #TODO: you need to implement here to transfer the subscribed data to somewhere you want to use.
-    #self.poseStamped = poseStamped
+    Control_CBF.update_poseStamped(poseStamped)
     pass
 
 
@@ -113,18 +112,22 @@ if __name__ == '__main__':
     """
 
     # # subscliber to get odometry of HSR
-    # rospy.Subscriber('/hsrb/odom_ground_truth', Odometry, tOdometry_callback, queue_size=10)
-    # rospy.Subscriber('/global_pose', PoseStamped, odometry_callback, queue_size=10)
+    rospy.Subscriber('/hsrb/odom_ground_truth', Odometry, tOdometry_callback, queue_size=10)
+    rospy.Subscriber('/global_pose', PoseStamped, odometry_callback, queue_size=10)
 
     # # publisher to send vw order to HSR
-    # vw_publisher = rospy.Publisher('/hsrb/command_velocity', Twist, queue_size=10)
+    vw_publisher = rospy.Publisher('/hsrb/command_velocity', Twist, queue_size=10)
 
     # # subscriber for agents data from Gazebo info.
-    # rospy.wait_for_service ('/gazebo/get_model_state')
-    # get_model_pro = rospy.ServiceProxy('/gazebo/get_world_properties', GetWorldProperties)
-    # get_model_srv = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
+    rospy.wait_for_service ('/gazebo/get_model_state')
+    get_model_pro = rospy.ServiceProxy('/gazebo/get_world_properties', GetWorldProperties)
+    get_model_srv = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
 
-
+    actors = []
+    model_properties = get_model_pro()
+    for model_name in model_properties.model_names:
+            if re.search('actor*', model_name) and not model_name in actors:  # if the model name is actor*, it will catch them.
+                    actors.append(model_name) 
 
     states_str = ['xr_0', 'xr_1', 'xr_2']
     inputs_str = ['ur_0', 'ur_1']
@@ -161,21 +164,21 @@ if __name__ == '__main__':
     #we can create that, we may need to think about a way to assign agents to system
     print(agent_system.system_details())
 
-    try:
-        rospy.init_node('agent_system')
-        agent = Agent()
-        rospy.Timer(rospy.Duration(1.0/freq), agent.control_callback)
-        rospy.spin()
+    # try:
+    #     rospy.init_node('agent_system')
+    #     agent = Agent()
+    #     rospy.Timer(rospy.Duration(1.0/freq), agent.control_callback)
+    #     rospy.spin()
 
 
 
-        rospy.init_node('cbf_controller')
-        rospy.init_node(args.model_name[0]+'_controller')
-        agent = Agent(args.model_name[0])
-        rospy.Timer(rospy.Duration(1.0/freq), agent.control_callback)
-        rospy.spin()
-    except rospy.ROSInterruptException:
-        pass
+    #     rospy.init_node('cbf_controller')
+    #     rospy.init_node(args.model_name[0]+'_controller')
+    #     agent = Agent(args.model_name[0])
+    #     rospy.Timer(rospy.Duration(1.0/freq), agent.control_callback)
+    #     rospy.spin()
+    # except rospy.ROSInterruptException:
+    #     pass
 
 
 
@@ -197,22 +200,23 @@ if __name__ == '__main__':
     rGoal = np.power(0.5,2)
     goal_set_func = lambda x: (x[0]-GoalCenter[0])**2+(x[1]-GoalCenter[1])**2-rGoal
 
-    # Control_CBF(ego_system, CBF1, goal_set_func)
+   
 
 
     try:
         rospy.init_node('HSR')
         connected_HSR = Connected_system(ego_system, HSR_connections())
+        Control_CBF(connected_HSR, CBF1, goal_set_func)
         control_priod = 0.05 #[sec] we can change controll priod with this parameter.
-        rospy.Timer(rospy.Duration(control_priod), Control_CBF.controller_loop_callback())
+        rospy.Timer(rospy.Duration(control_priod), Control_CBF.controller_callback(get_model_pro,get_model_srv))
         rospy.spin()
     except rospy.ROSInterruptException:
         pass
 
-    try:
-        rospy.init_node('human')
-        connected_agent = Connected_system(agent_system, agent_connections())
-        rospy.Timer(rospy.Duration(1.0/freq), Control_CBF.control_callback)
-        rospy.spin()
-    except rospy.ROSInterruptException:
-        pass
+    # try:
+    #     rospy.init_node('human')
+    #     connected_agent = Connected_system(agent_system, agent_connections())
+    #     rospy.Timer(rospy.Duration(1.0/freq), Control_CBF.control_callback)
+    #     rospy.spin()
+    # except rospy.ROSInterruptException:
+    #     pass

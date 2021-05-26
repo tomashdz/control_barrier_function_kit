@@ -86,3 +86,9 @@ class Connected_system(System):
     def __init__(self,system,connection):
         self.system = system
         self.connection = connection
+
+    def tOdometry_callback(self, odometry):
+        self.odometry = odometry # this odometry's coodination is \map
+
+    def odometry_callback(self, poseStamped):
+        self.poseStamped = poseStamped

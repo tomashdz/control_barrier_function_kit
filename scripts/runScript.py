@@ -5,7 +5,7 @@ import re
 from sympy import symbols, Matrix, sin, cos, lambdify, exp, sqrt, log, diff
 from system import *
 from CBF import *
-from Control_CBF import *
+# from Control_CBF import *
 import numpy as np
 
 
@@ -112,7 +112,7 @@ if __name__ == '__main__':
     """
 
     # # subscliber to get odometry of HSR
-    rospy.Subscriber('/hsrb/odom_ground_truth', Odometry, tOdometry_callback, queue_size=10)
+    rospy.Subscriber('/hsrb/odom_ground_truth', Odometry, tOdometry_callback(System), queue_size=10)
     rospy.Subscriber('/global_pose', PoseStamped, odometry_callback, queue_size=10)
 
     # # publisher to send vw order to HSR
@@ -206,9 +206,9 @@ if __name__ == '__main__':
     try:
         rospy.init_node('HSR')
         connected_HSR = Connected_system(ego_system, HSR_connections())
-        Control_CBF(connected_HSR, CBF1, goal_set_func)
+        Control_CBF = Control_CBF(connected_HSR, CBF1, goal_set_func)
         control_priod = 0.05 #[sec] we can change controll priod with this parameter.
-        rospy.Timer(rospy.Duration(control_priod), Control_CBF.controller_callback(get_model_pro,get_model_srv))
+        rospy.Timer(rospy.Duration(control_priod), Control_CBF.controller_callback())
         rospy.spin()
     except rospy.ROSInterruptException:
         pass

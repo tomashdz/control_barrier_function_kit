@@ -45,6 +45,7 @@ class System(object):
         self.Full_states = Full_states
     
     def add_state_traj(self, state, time):
+        self.currState = state
         self.state_traj.append([time, state[:]])
 
     def add_control_traj(self, control, time):

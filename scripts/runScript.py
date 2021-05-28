@@ -1,6 +1,7 @@
 import argparse
 import rospy
 import re
+import roslaunch
 
 from sympy import symbols, Matrix, sin, cos, lambdify, exp, sqrt, log, diff
 from system import *
@@ -112,22 +113,39 @@ if __name__ == '__main__':
     """
 
     # # subscliber to get odometry of HSR
-    rospy.Subscriber('/hsrb/odom_ground_truth', Odometry, tOdometry_callback(System), queue_size=10)
-    rospy.Subscriber('/global_pose', PoseStamped, odometry_callback, queue_size=10)
+    # rospy.Subscriber('/hsrb/odom_ground_truth', Odometry, tOdometry_callback(System), queue_size=10)
+    # rospy.Subscriber('/global_pose', PoseStamped, odometry_callback, queue_size=10)
 
-    # # publisher to send vw order to HSR
-    vw_publisher = rospy.Publisher('/hsrb/command_velocity', Twist, queue_size=10)
+    # # # publisher to send vw order to HSR
+    # vw_publisher = rospy.Publisher('/hsrb/command_velocity', Twist, queue_size=10)
 
-    # # subscriber for agents data from Gazebo info.
-    rospy.wait_for_service ('/gazebo/get_model_state')
-    get_model_pro = rospy.ServiceProxy('/gazebo/get_world_properties', GetWorldProperties)
-    get_model_srv = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
+    # # # subscriber for agents data from Gazebo info.
+    # rospy.wait_for_service ('/gazebo/get_model_state')
+    # get_model_pro = rospy.ServiceProxy('/gazebo/get_world_properties', GetWorldProperties)
+    # get_model_srv = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
 
-    actors = []
-    model_properties = get_model_pro()
-    for model_name in model_properties.model_names:
-            if re.search('actor*', model_name) and not model_name in actors:  # if the model name is actor*, it will catch them.
-                    actors.append(model_name) 
+    # actors = []
+    # model_properties = get_model_pro()
+    # for model_name in model_properties.model_names:
+    #         if re.search('actor*', model_name) and not model_name in actors:  # if the model name is actor*, it will catch them.
+    #                 actors.append(model_name) 
+
+    # Process arguments
+    p = argparse.ArgumentParser(description='agent node')
+    p.add_argument('--model_name', nargs=1, type=str, required=True, help='the taregt model name on gazebo')
+    args = p.parse_args(rospy.myargv()[1:])
+
+    try:
+        global pub
+        rospy.init_node(args.model_name[0]+'_controller')
+        # pub = rospy.Publisher('chatter', String, queue_size=10)
+        agent = Agent(args.model_name[0])
+        rospy.Timer(rospy.Duration(1.0/freq), agent.control_callback)
+        rospy.spin()
+
+    except rospy.ROSInterruptException:
+        pass
+
 
     states_str = ['xr_0', 'xr_1', 'xr_2']
     inputs_str = ['ur_0', 'ur_1']
@@ -160,25 +178,10 @@ if __name__ == '__main__':
     D = Matrix(np.eye(2))
     # agent = Stochastic('agent',states, inputs, f, None, C, G = G , D= D)
     agent_system = System('human',states, inputs, f)   
-    #One agent instance is enough for all agents of the same type, if we have other types of agents,
-    #we can create that, we may need to think about a way to assign agents to system
+    # One agent instance is enough for all agents of the same type, if we have other types of agents,
+    # we can create that, we may need to think about a way to assign agents to system
     print(agent_system.system_details())
 
-    # try:
-    #     rospy.init_node('agent_system')
-    #     agent = Agent()
-    #     rospy.Timer(rospy.Duration(1.0/freq), agent.control_callback)
-    #     rospy.spin()
-
-
-
-    #     rospy.init_node('cbf_controller')
-    #     rospy.init_node(args.model_name[0]+'_controller')
-    #     agent = Agent(args.model_name[0])
-    #     rospy.Timer(rospy.Duration(1.0/freq), agent.control_callback)
-    #     rospy.spin()
-    # except rospy.ROSInterruptException:
-    #     pass
 
 
 
@@ -191,9 +194,11 @@ if __name__ == '__main__':
     CBF1 = CBF(h1, B, ego_system, agent_system)
     print(CBF1.details())
 
-    h = lambda x, minx: (x[0]-minx)
-    h = lambda x, maxx: (maxx-x[0])
-    # B = ((xr0 - cx)/rad_x)**2 + ((xr1 - cy)/rad_y)**2 - 1
+    # Enviroment Bounds
+    env_bounds = type('', (), {})()
+    env_bounds.y_min = -1.2
+    env_bounds.y_max = 1 
+    corridorMap = Map(env_bounds,ego_system)
 
     # Goal set description
     GoalCenter = np.array([0, 0])

@@ -9,30 +9,82 @@ class CBF(object):
         self.states = [ego.states, agent.states]
         self.compute_LHS_RHS(ego, agent)
         self.agent = agent
-        # self.B = exp(-gamma*Uset)
+        # self.B = exp(-gamma*h)
 
 
     def compute_LHS_RHS(self, ego , agent):
+        #TODO: Extend for stochacic (there is additional term there)
+        #TODO: Extend for risk bounds (extra constraints)
+
         """
-        B_dot <= -alpha*B(x) if B<=0 is safe
-        LHS*inputs <= RHS
+        Computes "B_dot <= -alpha*B(x)" if B<=0 is safe
+        LHS*ego.inputs <= RHS
 
         Args:
-            agent ([type]): [description]
+            ego <class System>
+            agent <class System>
         """
         alpha = 1
-        # h_inp = [ego.states, agent.states]
         BFsym = self.BF(*self.states)
         BF_d = BFsym.diff(Matrix([ego.states,agent.states]))
         self.LHS = lambdify([ego.states,agent.states], -alpha*BFsym-(BF_d.T*Matrix([ego.f,agent.f]))[0])
         self.RHS = lambdify([ego.states,agent.states], (Matrix(BF_d[:ego.nDim]).T*ego.g)[0])
 
         # BF_d2 =  self.BF.diff(self.x_o_s,2)
-        # UnsafeInfo.CBF = lambdify([self.x_r_s,self.x_o_s], CBF)
+        # UnsafeInfo.CBF = lambdify([ego.states,self.x_o_s], CBF)
     
     def details(self):
         return '{}\n {}\n {}\n'.format(self.h(*self.states), self.BF(*self.states), self.states)
-    # def add_constraint(self):
-    #     pass
-    # def remove_constraint(self):
-    #     pass
+
+
+class Map(object):
+    def __init__(self, env_bounds, ego):
+        #TODO: add checks on the passed argument
+        """
+        Computes "B_dot <= -alpha*B(x)" if B<=0 is safe
+        LHS*ego.inputs <= RHS
+
+        Args:
+            env_bounds: object that has either or all of these attributes {'x_min','x_max','y_min','y_max'}
+            ego <class System>
+        """
+
+        self.states = ego.states
+        self.h = []
+        self.BF = []
+        self.LHS = []
+        self.RHS = []
+        alpha = 1
+
+        if hasattr(env_bounds,'x_min'):
+                h = -(-ego.states[0]+env_bounds.x_min)   # h(x)<=0 defines unsafe region
+                CBF = -h
+                BF_d = CBF.diff(Matrix([ego.states]))
+                self.h.append(lambdify([ego.states], h))
+                self.BF.append(lambdify([ego.states],CBF))
+                self.LHS.append(lambdify([ego.states], -alpha*CBF-(BF_d.T*ego.f)[0]))
+                self.RHS.append(lambdify([ego.states], (BF_d.T*ego.g)[0]))
+        if hasattr(env_bounds,'x_max'):
+                h = -(ego.states[0]-env_bounds.x_max)
+                CBF = -h
+                BF_d = CBF.diff(Matrix([ego.states]))
+                self.h.append(lambdify([ego.states], h))
+                self.BF.append(lambdify([ego.states],CBF))
+                self.LHS.append(lambdify([ego.states], -alpha*CBF-(BF_d.T*ego.f)[0]))
+                self.RHS.append(lambdify([ego.states], (BF_d.T*ego.g)[0]))        
+        if hasattr(env_bounds,'y_min'):
+                h = -(-ego.states[1]+env_bounds.y_min)
+                CBF = -h
+                BF_d = CBF.diff(Matrix([ego.states]))
+                self.h.append(lambdify([ego.states], h))
+                self.BF.append(lambdify([ego.states],CBF))
+                self.LHS.append(lambdify([ego.states], -alpha*CBF-(BF_d.T*ego.f)[0]))
+                self.RHS.append(lambdify([ego.states], (BF_d.T*ego.g)[0]))
+        if hasattr(env_bounds,'y_max'):
+                h = -(ego.states[1]-env_bounds.y_max)
+                CBF = -h
+                self.h.append(lambdify([ego.states], h))
+                self.BF.append(lambdify([ego.states],CBF))
+                self.LHS.append(lambdify([ego.states], -alpha*CBF-(BF_d.T*ego.f)[0]))
+                self.RHS.append(lambdify([ego.states], (BF_d.T*ego.g)[0]))        # if hasattr(env_bounds,'f'):
+        #         pass #To be filled later

@@ -131,20 +131,20 @@ if __name__ == '__main__':
     #                 actors.append(model_name) 
 
     # Process arguments
-    p = argparse.ArgumentParser(description='agent node')
-    p.add_argument('--model_name', nargs=1, type=str, required=True, help='the taregt model name on gazebo')
-    args = p.parse_args(rospy.myargv()[1:])
+    # p = argparse.ArgumentParser(description='agent node')
+    # p.add_argument('--model_name', nargs=1, type=str, required=True, help='the taregt model name on gazebo')
+    # args = p.parse_args(rospy.myargv()[1:])
 
-    try:
-        global pub
-        rospy.init_node(args.model_name[0]+'_controller')
-        # pub = rospy.Publisher('chatter', String, queue_size=10)
-        agent = Agent(args.model_name[0])
-        rospy.Timer(rospy.Duration(1.0/freq), agent.control_callback)
-        rospy.spin()
+    # try:
+    #     global pub
+    #     rospy.init_node(args.model_name[0]+'_controller')
+    #     # pub = rospy.Publisher('chatter', String, queue_size=10)
+    #     agent = Agent(args.model_name[0])
+    #     rospy.Timer(rospy.Duration(1.0/freq), agent.control_callback)
+    #     rospy.spin()
 
-    except rospy.ROSInterruptException:
-        pass
+    # except rospy.ROSInterruptException:
+    #     pass
 
 
     states_str = ['xr_0', 'xr_1', 'xr_2']
@@ -184,8 +184,6 @@ if __name__ == '__main__':
 
 
 
-
-
     UnsafeRadius = 0.5
     # Define h such that h(x)<=0 defines unsafe region
     h = lambda x, y, UnsafeRadius : (x[0]-y[0])**2+(x[1]-y[1])**2-(UnsafeRadius+l)**2
@@ -198,14 +196,13 @@ if __name__ == '__main__':
     env_bounds = type('', (), {})()
     env_bounds.y_min = -1.2
     env_bounds.y_max = 1 
-    corridorMap = Map(env_bounds,ego_system)
+    corridorMap = Map_CBF(env_bounds,ego_system)
 
     # Goal set description
     GoalCenter = np.array([0, 0])
     rGoal = np.power(0.5,2)
     goal_set_func = lambda x: (x[0]-GoalCenter[0])**2+(x[1]-GoalCenter[1])**2-rGoal
 
-   
 
 
     try:

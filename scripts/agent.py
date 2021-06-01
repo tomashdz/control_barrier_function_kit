@@ -2,7 +2,8 @@
 import argparse
 
 import rospy
-
+from std_msgs.msg import String
+from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Odometry
 from std_msgs.msg import Header
 from gazebo_msgs.msg import ModelState
@@ -16,12 +17,12 @@ class Agent(object):
         rospy.wait_for_service ('/gazebo/get_model_state')
         self.get_model_srv = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
         self.set_model_srv = rospy.ServiceProxy('/gazebo/set_model_state', SetModelState)
+        self.pub = rospy.Publisher('/agentpose', PoseStamped, queue_size=10)        
 
         self.model = GetModelStateRequest()
         self.model.model_name = model_name
 
     def control_callback(self, event):
-        # global pub
         result = self.get_model_srv(self.model)
         rospy.loginfo(result)
 
@@ -31,21 +32,24 @@ class Agent(object):
         state_msg.twist = result.twist
         state_msg.pose.position.x = result.pose.position.x + speed/freq
         resp = self.set_model_srv( state_msg )
-        # rospy.loginfo("helllloooooo")
-        # pub.publish("hello_str")
+        pose = PoseStamped()
+        pose.pose = state_msg.pose
+        self.pub.publish(pose)
+        
+        
 
 
 if __name__ == '__main__':
     # Process arguments
-    p = argparse.ArgumentParser(description='agent node')
-    p.add_argument('--model_name', nargs=1, type=str, required=True, help='the taregt model name on gazebo')
-    args = p.parse_args(rospy.myargv()[1:])
+    # p = argparse.ArgumentParser(description='agent node')
+    # p.add_argument('--model_name', nargs=1, type=str, required=True, help='the taregt model name on gazebo')
+    # args = p.parse_args(rospy.myargv()[1:])
 
     try:
-        global pub
-        rospy.init_node(args.model_name[0]+'_controller')
-        # pub = rospy.Publisher('chatter', String, queue_size=10)
-        agent = Agent(args.model_name[0])
+        # rospy.init_node(args.model_name[0]+'_controller')
+        rospy.init_node('agent')
+        # agent = Agent(args.model_name[0])
+        agent = Agent('agent')
         rospy.Timer(rospy.Duration(1.0/freq), agent.control_callback)
         rospy.spin()
 

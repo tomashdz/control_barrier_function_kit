@@ -37,7 +37,7 @@ class CBF(object):
         return '{}\n {}\n {}\n'.format(self.h(*self.states), self.BF(*self.states), self.states)
 
 
-class Map(object):
+class Map_CBF(object):
     def __init__(self, env_bounds, ego):
         #TODO: add checks on the passed argument
         """
@@ -83,6 +83,7 @@ class Map(object):
         if hasattr(env_bounds,'y_max'):
                 h = -(ego.states[1]-env_bounds.y_max)
                 CBF = -h
+                BF_d = CBF.diff(Matrix([ego.states]))
                 self.h.append(lambdify([ego.states], h))
                 self.BF.append(lambdify([ego.states],CBF))
                 self.LHS.append(lambdify([ego.states], -alpha*CBF-(BF_d.T*ego.f)[0]))

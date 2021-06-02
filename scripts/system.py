@@ -4,6 +4,8 @@ import rospy
 from geometry_msgs.msg import PoseStamped
 from geometry_msgs.msg import Vector3
 from nav_msgs.msg import Odometry
+from geometry_msgs.msg import Twist
+
 # ROS others
 import tf
 class System(object):
@@ -91,8 +93,10 @@ class Connected_system(object):
     def __init__(self,ego_system,agent_systems):
         self.ego = ego_system
         self.agents = agent_systems
+        self.vw_publisher = rospy.Publisher('/hsrb/command_velocity', Twist, queue_size=10)
+
+
         # # subscliber to get odometry of HSR & agents
-        
         rospy.Subscriber('/hsrb/odom_ground_truth', Odometry, self.tOdometry_callback, queue_size=10)
         # rospy.Subscriber('/global_pose', PoseStamped, odometry_callback, queue_size=10)
         
@@ -121,6 +125,13 @@ class Connected_system(object):
         angular = orientation2angular(agentPose.pose.pose.orientation)      # transfer orientaton(quaternion)->agular(euler)
         state = [p.x,p.y,angular.z]
         self.agents[self.i].add_state_traj(state,time)
+    
+    def publish(self, u):
+        vel_msg = Twist()
+        vel_msg.linear.x  = u[0]
+        vel_msg.angular.z = u[1]
+        self.vw_publisher.publish(vel_msg)
+       
 
 
 def orientation2angular(orientation):

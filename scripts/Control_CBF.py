@@ -1,40 +1,19 @@
-from runScript import get_model_srv
+# from HSR_control import get_model_srv
 from gazebo_msgs.srv import GetWorldProperties, GetModelState, GetModelStateRequest
 import numpy as np
+import rospy
+from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import Vector3
+from nav_msgs.msg import Odometry
 
-def orientation2angular(orientation):
-    quaternion = (  orientation.x,
-                    orientation.y,
-                    orientation.z,
-                    orientation.w)
-    euler = tf.transformations.euler_from_quaternion(quaternion)
-    angular = Vector3(
-            euler[0],
-            euler[1],
-            euler[2]
-    )
-    return angular
-
-
-
-def get_agent_pose(actors)
-    actors_data = []
-    for actor in actors:
-            model_actor = GetModelStateRequest()
-            model_actor.model_name = actor
-            model_actor = get_model_srv(model_actor) # the pose date is based on /map
-            # actor_base_footprint_pose = self.gazebo_pos_transformPose('base_footprint', model_actor) # trasfer /map->/base_footprint
-            angular = orientation2angular(model_actor.pose.orientation)      # transfer orientaton(quaternion)->agular(euler)
-            p = model_actor.pose.position
-            actors_data.append([p.x,p.y, angular.z])
-    return actors_data       
+     
 
 class Control_CBF(object):
-    def __init__(self, ego, CBFList, goal_set_func, MapInfo , P = None, Q = None, IncludeRadius = 10):  # make sure ego is the system with which CBF is created 
-        self.ego = ego
+    def __init__(self, connected_system, CBFList, goal_func, MapInfo , P = None, Q = None, IncludeRadius = 10):  # make sure ego is the system with which CBF is created 
+        self.ego = connected_system.ego
         self.CBFList = CBFList
-        self.GoalInfo = self.GoalFuncs(goal_set_func,ego)
-        self.MapInfo = self.MapInfo
+        self.GoalInfo = goal_func
+        self.MapInfo = MapInfo
         self.P = 1
         self.Q = 1
         self.IncludeRadius = IncludeRadius
@@ -42,42 +21,10 @@ class Control_CBF(object):
         self.flag = 0
 
 
-    def GoalFuncs(self,goal_set_func,ego):
-        GoalInfo = type('', (), {})()
-        GoalInfo.set = goal_set_func
-        GoalSym = goal_set_func(*ego.states)
-        GoalInfo.Lyap = lambdify([ego.states,ego.inputs],GoalSym.diff(ego.states).T*ego.dx)
-        return GoalInfo
-
-    def update_odometry(self,odometry):
-        self.odometry = odometry
-    def update_poseStamped(self,poseStamped):
-        self.poseStamped = poseStamped
-    def update_actors_data(self, actors):
-        self.actors_data = get_agent_pose(actors)
-    def set_goal(self, goal_set_func):
-        self.goal_set_func = goal_set_func
-
-   
-    def update_states(self):
-        now = rospy.get_rostime()
-        time = now.secs+now.nsecs*pow(10,-9)
-        if DEBUG:
-                rospy.loginfo('Current time %i %i', now.secs, now.nsecs)
-                rospy.loginfo('tOdometry\n %s', self.connected_ego.odometry) 
-        self.connected_ego.system.add_state_traj(state, time)
-
     def controller_callback(self, event):
                 # this controller loop call back.
                 self.count += 1
-                # [time, update_states()
 
-
-        #         now = rospy.get_rostime()
-        #         self.trajs.time.append(now.secs+now.nsecs*pow(10,-9))
-        #         if DEBUG:
-        #                 rospy.loginfo('Current time %i %i', now.secs, now.nsecs)
-        #                 rospy.loginfo('tOdometry\n %s', self.odometry)
         #         # get human model state from Gazebo
         #         actors_data = []
         #         for actor in self.actors:
@@ -151,7 +98,7 @@ class Control_CBF(object):
     #     return gazebo_pos_trans
 
 
- def cbf_controller_compute(self):
+def cbf_controller_compute(self):
         pass
         x_r = np.array([1, 1, 1])
         x_o = np.array([[ 4.75      , -1.01058068,  1.54978755],

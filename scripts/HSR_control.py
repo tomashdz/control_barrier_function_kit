@@ -6,7 +6,7 @@ import roslaunch
 from sympy import symbols, Matrix, sin, cos, lambdify, exp, sqrt, log, diff
 from system import *
 from CBF import *
-# from Control_CBF import *
+from Control_CBF import *
 import numpy as np
 
 
@@ -69,83 +69,16 @@ def  agent_break(states, inputs, radi, multi):
     return f
 
 
-# def HSR_connections():
-#         # Reading for HSR
-#     HSRconnection = type('', (), {})()
-#     # HSRconnection.vw_publisher = rospy.Publisher('/hsrb/command_velocity', Twist, queue_size=10)
-#     # subscriber for Gazebo info.
-#     # rospy.wait_for_service ('/gazebo/get_model_state')
-#     # HSRconnection.get_model_pro = rospy.ServiceProxy('/gazebo/get_world_properties', GetWorldProperties)
-#     # HSRconnection.get_model_srv = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
-#     # HSRconnection.tOdometry_subscriber = rospy.Subscriber('/hsrb/odom_ground_truth', Odometry, tOdometry_callback, queue_size=10)
-#     HSRconnection.tOdometry = Odometry()
-#     # HSRconnection.odometry_subscriber = rospy.Subscriber('/global_pose', PoseStamped, odometry_callback, queue_size=10)
-#     HSRconnection.poseStamped = PoseStamped()
-#     # listener of tf.
-#     HSRconnection.tfListener = tf.TransformListener()
-#     return HSRconnection
 
-# def agent_connections():
-#     rospy.wait_for_service ('/gazebo/get_model_state')
-#     Agentconnection = type('', (), {})()
-#     Agentconnection.get_model_srv = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
-#     Agentconnection.set_model_srv = rospy.ServiceProxy('/gazebo/set_model_state', SetModelState)
-
-#     Agentconnection.model = GetModelStateRequest()
-#     Agentconnection.model.model_name = model_name
-#     return Agentconnection
-
-def tOdometry_callback(odometry):
-    #TODO: you need to implement here to transfer the subscribed data to somewhere you want to use.
-    #self.odometry = odometry # this odometry's coodination is \map
-    Control_CBF.update_odometry(odometry)
-    pass
-
-
-def odometry_callback(poseStamped):
-    #TODO: you need to implement here to transfer the subscribed data to somewhere you want to use.
-    Control_CBF.update_poseStamped(poseStamped)
-    pass
 
 
 if __name__ == '__main__':
     """This is main
     """
+    
+    # assume we have read the names of agents from ROS and stored them here
 
-    # # subscliber to get odometry of HSR
-    # rospy.Subscriber('/hsrb/odom_ground_truth', Odometry, tOdometry_callback(System), queue_size=10)
-    # rospy.Subscriber('/global_pose', PoseStamped, odometry_callback, queue_size=10)
-
-    # # # publisher to send vw order to HSR
-    # vw_publisher = rospy.Publisher('/hsrb/command_velocity', Twist, queue_size=10)
-
-    # # # subscriber for agents data from Gazebo info.
-    # rospy.wait_for_service ('/gazebo/get_model_state')
-    # get_model_pro = rospy.ServiceProxy('/gazebo/get_world_properties', GetWorldProperties)
-    # get_model_srv = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
-
-    # actors = []
-    # model_properties = get_model_pro()
-    # for model_name in model_properties.model_names:
-    #         if re.search('actor*', model_name) and not model_name in actors:  # if the model name is actor*, it will catch them.
-    #                 actors.append(model_name) 
-
-    # Process arguments
-    # p = argparse.ArgumentParser(description='agent node')
-    # p.add_argument('--model_name', nargs=1, type=str, required=True, help='the taregt model name on gazebo')
-    # args = p.parse_args(rospy.myargv()[1:])
-
-    # try:
-    #     global pub
-    #     rospy.init_node(args.model_name[0]+'_controller')
-    #     # pub = rospy.Publisher('chatter', String, queue_size=10)
-    #     agent = Agent(args.model_name[0])
-    #     rospy.Timer(rospy.Duration(1.0/freq), agent.control_callback)
-    #     rospy.spin()
-
-    # except rospy.ROSInterruptException:
-    #     pass
-
+    agentnames = ['agent','agent1']
 
     states_str = ['xr_0', 'xr_1', 'xr_2']
     inputs_str = ['ur_0', 'ur_1']
@@ -160,12 +93,8 @@ if __name__ == '__main__':
     
     print(ego_system.system_details())
 
-
-
-
-
-
-    # AGENT
+    # AGENTS #
+    # agent1
     states_str = ['xo_0', 'xo_1', 'xo_2', 'xo_3']
     inputs_str = ['xr_0', 'xr_1']
 
@@ -177,7 +106,14 @@ if __name__ == '__main__':
     G = Matrix(np.eye(len(states)))
     D = Matrix(np.eye(2))
     # agent = Stochastic('agent',states, inputs, f, None, C, G = G , D= D)
-    agent_system = System('human',states, inputs, f)   
+    agent_system = System('agent',states, inputs, f)   
+    # One agent instance is enough for all agents of the same type, if we have other types of agents,
+    # we can create that, we may need to think about a way to assign agents to system
+    print(agent_system.system_details())
+
+
+    # agent2
+    agent_system2 = System('agent2',states, inputs, f)   
     # One agent instance is enough for all agents of the same type, if we have other types of agents,
     # we can create that, we may need to think about a way to assign agents to system
     print(agent_system.system_details())
@@ -189,9 +125,13 @@ if __name__ == '__main__':
     h = lambda x, y, UnsafeRadius : (x[0]-y[0])**2+(x[1]-y[1])**2-(UnsafeRadius+l)**2
     h1 = lambda x, y: h(x,y,UnsafeRadius)
     B = lambda x, y: -h(x,y,UnsafeRadius)
+    
     CBF1 = CBF(h1, B, ego_system, agent_system)
     print(CBF1.details())
 
+    CBF2 = CBF(h1, B, ego_system, agent_system2)
+    print(CBF2.details())
+    
     # Enviroment Bounds
     env_bounds = type('', (), {})()
     env_bounds.y_min = -1.2
@@ -202,23 +142,16 @@ if __name__ == '__main__':
     GoalCenter = np.array([0, 0])
     rGoal = np.power(0.5,2)
     goal_set_func = lambda x: (x[0]-GoalCenter[0])**2+(x[1]-GoalCenter[1])**2-rGoal
+    goal_func = Goal_Lyap(goal_set_func,ego_system)
 
 
 
     try:
         rospy.init_node('HSR')
-        connected_HSR = Connected_system(ego_system, HSR_connections())
-        Control_CBF = Control_CBF(connected_HSR, CBF1, goal_set_func)
+        connected_HSR = Connected_system(ego_system, [agent_system, agent_system2])
+        Control_CBF = Control_CBF(connected_HSR, [CBF1, CBF2], goal_func, corridorMap)
         control_priod = 0.05 #[sec] we can change controll priod with this parameter.
-        rospy.Timer(rospy.Duration(control_priod), Control_CBF.controller_callback())
+        rospy.Timer(rospy.Duration(control_priod), Control_CBF.controller_callback)
         rospy.spin()
     except rospy.ROSInterruptException:
         pass
-
-    # try:
-    #     rospy.init_node('human')
-    #     connected_agent = Connected_system(agent_system, agent_connections())
-    #     rospy.Timer(rospy.Duration(1.0/freq), Control_CBF.control_callback)
-    #     rospy.spin()
-    # except rospy.ROSInterruptException:
-    #     pass

@@ -1,7 +1,11 @@
 from sympy import symbols, Matrix, sin, cos, lambdify, exp, sqrt, log, diff
 import numpy as np
-
-
+import rospy
+from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import Vector3
+from nav_msgs.msg import Odometry
+# ROS others
+import tf
 class System(object):
 
     """
@@ -83,13 +87,52 @@ class Stochastic(System):
 
 
 
-class Connected_system(System):
-    def __init__(self,system,connection):
-        self.system = system
-        self.connection = connection
-
+class Connected_system(object):
+    def __init__(self,ego_system,agent_systems):
+        self.ego = ego_system
+        self.agents = agent_systems
+        # # subscliber to get odometry of HSR & agents
+        
+        rospy.Subscriber('/hsrb/odom_ground_truth', Odometry, self.tOdometry_callback, queue_size=10)
+        # rospy.Subscriber('/global_pose', PoseStamped, odometry_callback, queue_size=10)
+        
+        # assume we have read the names of agents from ROS and stored them here
+        self.i = 0
+        for agent in agent_systems:
+            agentname = agent.name
+            rospy.Subscriber('/'+agentname+'pose', PoseStamped, self.agent_callback, queue_size=10)
+            self.i +=1
+        
     def tOdometry_callback(self, odometry):
-        self.odometry = odometry # this odometry's coodination is \map
+        now = rospy.get_rostime()
+        time = now.secs+now.nsecs*pow(10,-9)  
+        p = odometry.pose.pose.position
+        angular = orientation2angular(odometry.pose.pose.orientation)      # transfer orientaton(quaternion)->agular(euler)
+        state = [p.x,p.y,angular.z]
+        self.ego.add_state_traj(state, time)
 
     def odometry_callback(self, poseStamped):
-        self.poseStamped = poseStamped
+        poseStamped = poseStamped
+
+    def agent_callback(self, agentPose):
+        now = rospy.get_rostime()
+        time = now.secs+now.nsecs*pow(10,-9)  
+        p = agentPose.pose.pose.position
+        angular = orientation2angular(agentPose.pose.pose.orientation)      # transfer orientaton(quaternion)->agular(euler)
+        state = [p.x,p.y,angular.z]
+        self.agents[self.i].add_state_traj(state,time)
+
+
+def orientation2angular(orientation):
+    quaternion = (  orientation.x,
+                    orientation.y,
+                    orientation.z,
+                    orientation.w)
+    euler = tf.transformations.euler_from_quaternion(quaternion)
+    angular = Vector3(
+            euler[0],
+            euler[1],
+            euler[2]
+    )
+    return angular
+        

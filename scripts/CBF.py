@@ -45,7 +45,7 @@ class Map_CBF(object):
         LHS*ego.inputs <= RHS
 
         Args:
-            env_bounds: object that has either or all of these attributes {'x_min','x_max','y_min','y_max'}
+            env_bounds: object that has either or all of these attributes {'x_min','x_max','y_min','y_max',''}
             ego <class System>
         """
 
@@ -89,3 +89,10 @@ class Map_CBF(object):
                 self.LHS.append(lambdify([ego.states], -alpha*CBF-(BF_d.T*ego.f)[0]))
                 self.RHS.append(lambdify([ego.states], (BF_d.T*ego.g)[0]))        # if hasattr(env_bounds,'f'):
         #         pass #To be filled later
+
+class Goal_Lyap(object):
+    def __init__(self,goal_set_func,ego):
+        self.set = goal_set_func
+        GoalSym = goal_set_func(ego.states)
+        self.Lyap = lambdify([ego.states,ego.inputs],GoalSym.diff(ego.states).T*ego.dx)
+    

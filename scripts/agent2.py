@@ -47,10 +47,10 @@ if __name__ == '__main__':
 
     try:
         # rospy.init_node(args.model_name[0]+'_controller')
-        rospy.init_node('agent')
+        rospy.init_node('agent2')
         # agent = Agent(args.model_name[0])
-        agent = Agent('agent')
-        rospy.Timer(rospy.Duration(1.0/freq), agent.control_callback)
+        agent2 = Agent('agent2')
+        rospy.Timer(rospy.Duration(1.0/freq), agent2.control_callback)
         rospy.spin()
 
     except rospy.ROSInterruptException:

@@ -17,7 +17,7 @@ class Agent(object):
         rospy.wait_for_service ('/gazebo/get_model_state')
         self.get_model_srv = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
         self.set_model_srv = rospy.ServiceProxy('/gazebo/set_model_state', SetModelState)
-        self.pub = rospy.Publisher('/'+model_name+'pose', PoseStamped, queue_size=10)        
+        self.pub = rospy.Publisher('/'+model_name+'pose', PoseStamped, queue_size=10)
 
         self.model = GetModelStateRequest()
         self.model.model_name = model_name
@@ -35,21 +35,18 @@ class Agent(object):
         pose = PoseStamped()
         pose.pose = state_msg.pose
         self.pub.publish(pose)
-        
-        
+
 
 
 if __name__ == '__main__':
     # Process arguments
-    # p = argparse.ArgumentParser(description='agent node')
-    # p.add_argument('--model_name', nargs=1, type=str, required=True, help='the taregt model name on gazebo')
-    # args = p.parse_args(rospy.myargv()[1:])
+    p = argparse.ArgumentParser(description='agent node')
+    p.add_argument('--model_name', nargs=1, type=str, required=True, help='the taregt model name on gazebo')
+    args = p.parse_args(rospy.myargv()[1:])
 
     try:
-        # rospy.init_node(args.model_name[0]+'_controller')
-        rospy.init_node('agent')
-        # agent = Agent(args.model_name[0])
-        agent = Agent('agent')
+        rospy.init_node(args.model_name[0]+'_controller')
+        agent = Agent(args.model_name[0])
         rospy.Timer(rospy.Duration(1.0/freq), agent.control_callback)
         rospy.spin()
 

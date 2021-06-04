@@ -7,6 +7,6 @@
 	</node>
 
 	<!-- agent order -->
-	<node pkg="Risk-based-Stochastic-Control-Barrier-Functions-" type="agent.py" name="agent" output="screen" args="--model_name agent">
+	<node pkg="Risk-based-Stochastic-Control-Barrier-Functions-" type="agent.py" name="agent1_controller" output="screen" args="--model_name agent1">
 	</node>
 </launch>

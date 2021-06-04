@@ -2,7 +2,7 @@ import argparse
 import rospy
 import re
 import roslaunch
-
+import time
 from sympy import symbols, Matrix, sin, cos, lambdify, exp, sqrt, log, diff
 from system import *
 from CBF import *
@@ -61,11 +61,14 @@ def  agent_break(states, inputs, radi, multi):
     Returns:
         f (symbolic expressions): to describe model of the system as dx = f
     """
-    if states.shape[0] != 4 or inputs.shape[0] != 2:
-        raise ValueError("appr_unicycle model has 3 states and 2 inputs")
+    if states.shape[0] != 3 or inputs.shape[0] != 2:
+        raise ValueError("agent_break model has 3 states and 2 inputs")
 
     c = multi
-    f = Matrix([states[2],states[3],-exp( c*(radi-(states[0]-inputs[0])**2) ),  -exp( c*(radi-(states[1]-inputs[1])**2) )] )
+    dx = (states[0]-inputs[0])*exp(c*(radi-(states[0]-inputs[0])**2))
+    dy = (states[1]-inputs[1])*exp(c*(radi-(states[1]-inputs[1])**2))
+    dtetha = 1/(1+(dy/dx)**2)
+    f = Matrix([dx, dy, dtetha])
     return f
 
 
@@ -88,14 +91,15 @@ if __name__ == '__main__':
     l = 0.1
     f, g = appr_unicycle(states, inputs, l)
     C = Matrix([[1,0,0],[0,1,0]])
+    inputRange = np.array([[-0.33,0.33],[-0.3,0.3]])
     # ego_system = System('ego', states, inputs, f, g)
-    ego_system = System('HSR', states, inputs, f, g, C)   
+    ego_system = System('HSR', states, inputs, f, g, None, inputRange)   
     
     print(ego_system.system_details())
 
     # AGENTS #
     # agent1
-    states_str = ['xo_0', 'xo_1', 'xo_2', 'xo_3']
+    states_str = ['xo_0', 'xo_1', 'xo_2']
     inputs_str = ['xr_0', 'xr_1']
 
     states = strList2SympyMatrix(states_str)
@@ -124,7 +128,7 @@ if __name__ == '__main__':
     # Define h such that h(x)<=0 defines unsafe region
     h = lambda x, y, UnsafeRadius : (x[0]-y[0])**2+(x[1]-y[1])**2-(UnsafeRadius+l)**2
     h1 = lambda x, y: h(x,y,UnsafeRadius)
-    B = lambda x, y: -h(x,y,UnsafeRadius)
+    B = lambda x, y: -h(x,y,UnsafeRadius) #B initially negative, so Bdot<= -aB 
     
     CBF1 = CBF(h1, B, ego_system, agent_system)
     print(CBF1.details())
@@ -148,10 +152,11 @@ if __name__ == '__main__':
 
     try:
         rospy.init_node('HSR')
-        connected_HSR = Connected_system(ego_system, [agent_system, agent_system2])
-        Control_CBF = Control_CBF(connected_HSR, [CBF1, CBF2], goal_func, corridorMap)
+        connected_HSR = Connected_system(ego_system, [CBF1, CBF2])
+        Control_CBF1 = Control_CBF(connected_HSR, goal_func, corridorMap)
         control_priod = 0.05 #[sec] we can change controll priod with this parameter.
-        rospy.Timer(rospy.Duration(control_priod), Control_CBF.controller_callback)
+        time.sleep(1)
+        rospy.Timer(rospy.Duration(control_priod), Control_CBF1.controller_callback)
         rospy.spin()
     except rospy.ROSInterruptException:
         pass

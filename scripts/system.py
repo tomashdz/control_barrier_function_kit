@@ -19,16 +19,18 @@ class System(object):
     """
     ####TODO:TODO: check whether you need Matrix here or not
 
-    def __init__(self, name, states, inputs, f, g = None, C = None, connection = None): 
+    def __init__(self, name, states, inputs, f, g = None, C = None, inputRange = None): 
         # TODO: Check the observability given C, the assert part may need more attention too
         Full_states = True          # If true the states are fully and precisely meaurable and y = x
         self.nDim = len(states)
         self.name = name        # TODO: Do we need name??
         self.states = states
         self.inputs = inputs
+        self.inputRange = inputRange
         self.f = f
         self.state_traj = []
         self.control_traj = []
+        self.currState = []
         if g is not None:
             self.g = Matrix(g)
             try: 
@@ -55,7 +57,7 @@ class System(object):
         self.state_traj.append([time, state[:]])
 
     def add_control_traj(self, control, time):
-        self.control_traj.append([time, command[:]])
+        self.control_traj.append([time, control[:]])
 
     def system_details(self):
         return '{}\n {}\n {}\n {}\n {}\n {}\n {}\n'.format(self.name, self.states, self.inputs, self.f, self.g, self.C, self.Full_states)
@@ -89,10 +91,12 @@ class Stochastic(System):
 
 
 
+
+
 class Connected_system(object):
-    def __init__(self,ego_system,agent_systems):
+    def __init__(self,ego_system,CBFList):
         self.ego = ego_system
-        self.agents = agent_systems
+        self.CBFList = CBFList
         self.vw_publisher = rospy.Publisher('/hsrb/command_velocity', Twist, queue_size=10)
 
 
@@ -102,10 +106,9 @@ class Connected_system(object):
         
         # assume we have read the names of agents from ROS and stored them here
         self.i = 0
-        for agent in agent_systems:
-            agentname = agent.name
-            rospy.Subscriber('/'+agentname+'pose', PoseStamped, self.agent_callback, queue_size=10)
-            self.i +=1
+        for CBF in self.CBFList:
+            agentname = CBF.agent.name
+            rospy.Subscriber('/'+agentname+'pose', PoseStamped, self.agent_callback, callback_args = agentname, queue_size=10)
         
     def tOdometry_callback(self, odometry):
         now = rospy.get_rostime()
@@ -118,13 +121,15 @@ class Connected_system(object):
     def odometry_callback(self, poseStamped):
         poseStamped = poseStamped
 
-    def agent_callback(self, agentPose):
+    def agent_callback(self, agentPose, agentname):
         now = rospy.get_rostime()
         time = now.secs+now.nsecs*pow(10,-9)  
-        p = agentPose.pose.pose.position
-        angular = orientation2angular(agentPose.pose.pose.orientation)      # transfer orientaton(quaternion)->agular(euler)
+        p = agentPose.pose.position
+        angular = orientation2angular(agentPose.pose.orientation)      # transfer orientaton(quaternion)->agular(euler)
         state = [p.x,p.y,angular.z]
-        self.agents[self.i].add_state_traj(state,time)
+        for i in range(len(self.CBFList)):
+            if self.CBFList[i].agent.name == agentname:
+                self.CBFList[i].agent.add_state_traj(state,time)
     
     def publish(self, u):
         vel_msg = Twist()

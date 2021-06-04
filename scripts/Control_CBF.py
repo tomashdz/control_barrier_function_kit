@@ -6,10 +6,9 @@ import rospy
      
 
 class Control_CBF(object):               
-        def __init__(self, connected_system, CBFList, goal_func, MapInfo , P = None, Q = None, IncludeRadius = 10):  # make sure ego is the system with which CBF is created 
+        def __init__(self, connected_system, goal_func, MapInfo , P = None, Q = None, IncludeRadius = 10):  # make sure ego is the system with which CBF is created 
                 self.ego = connected_system.ego
-                self.agents = connected_system.agents
-                self.CBFList = CBFList
+                self.CBFList = connected_system.CBFList
                 self.GoalInfo = goal_func
                 self.MapInfo = MapInfo
                 self.P = 1
@@ -49,8 +48,8 @@ class Control_CBF(object):
         def cbf_controller_compute(self):
                 x_r = self.ego.currState
                 x_o = []
-                for agent in  self.agents:
-                        x_o.append(agent.currState)
+                for CBF in self.CBFList:
+                        x_o.append(CBF.agent.currState)
                 u_s = self.ego.inputs
                 # if self.count>3:
                 # x_o_pre = np.array(self.trajs.actors[len(self.trajs.actors)-4])
@@ -65,12 +64,13 @@ class Control_CBF(object):
                 Map = self.MapInfo
                 
                 UnsafeList = []
-                Dists = np.zeros((len(CBFList)))
+                Dists = []
                 for CBF in CBFList:
-                Dists[j] = CBF.h(x_r, CBF.agent.currState)
-                if Dists[j]<self.IncludeRadius:
-                        UnsafeList.append(CBF)
-                ai = 1
+                        Dist = CBF.h(x_r, CBF.agent.currState)
+                        Dists.append(Dist)
+                        if Dist<self.IncludeRadius:
+                                UnsafeList.append(CBF)
+                        ai = 1
                 if min(Dists)<0:
                         InUnsafe = 1
                 else:
@@ -78,31 +78,28 @@ class Control_CBF(object):
                 minDist = min(Dists)
                 minJ = np.where(Dists == minDist)
 
-                numQPvars = len(u_s)+2*len(UnsafeList)+len(Map.set)+1
-                numConstraints = 2*len(u_s)+2*len(UnsafeList)+len(Map.set)+2
+                numQPvars = len(u_s)+2*len(UnsafeList)+len(Map.h)+1
+                numConstraints = 2*len(u_s)+2*len(UnsafeList)+len(Map.h)+2
 
                 A = np.zeros((numConstraints,numQPvars))
-                b =np.zeros(numConstraints)
+                b = np.zeros(numConstraints)
                 
                 for j in range(len(UnsafeList)):
                         # CBF Constraints        
-                        A[2*j,np.append(np.arange(len(u_s)),[len(u_s)+2*j])] = [CBFList.multCond(x_r,  x_o[UnsafeList[j]][0:2],[1, 0]), CBFList.multCond(x_r,x_o[UnsafeList[j]][0:2],[0, 1]), -1] # multiplier of u , bi
-                        b[2*j] = -ai* CBFList.CBF(x_r, x_o[UnsafeList[j]][0:2])- CBFList.ConstCond(x_r,  x_o[UnsafeList[j]][0:2],u_o[UnsafeList[j]]) 
-                        # Constraints on bi to satisfy pi risk
-                        A[2*j+1,len(u_s)+2*j] = 1; A[2*j+1,len(u_s)+2*j+1] = -1 
-                        if CBFList.CBF(x_r, x_o[UnsafeList[j]][0:2])<1:
-                                b[2*j+1] = min(ai, -1/T*log((1-risk)/(1-CBFList.CBF(x_r, x_o[UnsafeList[j]][0:2]))))
-                        else:
-                                b[2*j+1] = 0
+                        A[2*j, np.arange(len(u_s))]  = UnsafeList[j].LHS(x_r, UnsafeList[j].agent.currState)[0]
+                        A[2*j, len(u_s)+2*j] = -1
+                        b[2*j] = UnsafeList[j].RHS(x_r, UnsafeList[j].agent.currState)  
+                        A[2*j+1, len(u_s)+2*j] = -1
+                        b[2*j+1] = 0
 
 
 
                 
                 # Adding U constraint
-                A[2*len(UnsafeList),0] = 1; b[2*len(UnsafeList)] = U[0,1]
-                A[2*len(UnsafeList)+1,0] = -1;  b[2*len(UnsafeList)+1] = -U[0,0]
-                A[2*len(UnsafeList)+2,1] = 1; b[2*len(UnsafeList)+2] = U[1,1]
-                A[2*len(UnsafeList)+3,1] = -1; b[2*len(UnsafeList)+3] = -U[1,0]
+                A[2*len(UnsafeList),0] = 1; b[2*len(UnsafeList)] = self.ego.inputRange[0,1]
+                A[2*len(UnsafeList)+1,0] = -1;  b[2*len(UnsafeList)+1] = -self.ego.inputRange[0,0]
+                A[2*len(UnsafeList)+2,1] = 1; b[2*len(UnsafeList)+2] = self.ego.inputRange[1,1]
+                A[2*len(UnsafeList)+3,1] = -1; b[2*len(UnsafeList)+3] = -self.ego.inputRange[1,0]
                 
                 # Adding map constraints
                 for j in range(len(Map.set)):

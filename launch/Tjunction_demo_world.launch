@@ -2,7 +2,7 @@
 <launch>
 
 	<!-- Launch world -->
-	<include file="$(find Risk-based-Stochastic-Control-Barrier-Functions-)/launch/Tjunction.launch">
+	<include file="$(find Risk-based-Stochastic-Control-Barrier-Functions-)/launch/Tjunction_with_empty.launch">
 	</include>
 
 	<!-- spawn agent -->

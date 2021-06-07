@@ -9,8 +9,4 @@
         <arg name="use_laser_odom" value="false" />
     </include>
 
-    <!-- Launch cbf controller monitor (output console)>
-	<node name="cbf_controller" pkg="Risk-based-Stochastic-Control-Barrier-Functions-" type="cbf_controller.py" output="screen">
-	</node-->
-
 </launch>

@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <launch>
-    <!-- Launch cbf controller monitor (output console) -->
-	<node name="cbf_controller" pkg="Risk-based-Stochastic-Control-Barrier-Functions-" type="runScript.py" output="screen">
+	<!-- agent order -->
+	<node pkg="Risk-based-Stochastic-Control-Barrier-Functions-" type="agent.py" name="agent1_controller" output="screen" args="--model_name agent1">
 	</node>
 </launch>

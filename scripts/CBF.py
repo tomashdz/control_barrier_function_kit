@@ -62,32 +62,32 @@ class Map_CBF(object):
                 BF_d = CBF.diff(Matrix([ego.states]))
                 self.h.append(lambdify([ego.states], h))
                 self.BF.append(lambdify([ego.states],CBF))
-                self.LHS.append(lambdify([ego.states], -alpha*CBF-(BF_d.T*ego.f)[0]))
-                self.RHS.append(lambdify([ego.states], (BF_d.T*ego.g)[0]))
+                self.RHS.append(lambdify([ego.states], -alpha*CBF-(BF_d.T*ego.f)[0]))
+                self.LHS.append(lambdify([ego.states], (BF_d.T*ego.g)))
         if hasattr(env_bounds,'x_max'):
                 h = -(ego.states[0]-env_bounds.x_max)
                 CBF = -h
                 BF_d = CBF.diff(Matrix([ego.states]))
                 self.h.append(lambdify([ego.states], h))
                 self.BF.append(lambdify([ego.states],CBF))
-                self.LHS.append(lambdify([ego.states], -alpha*CBF-(BF_d.T*ego.f)[0]))
-                self.RHS.append(lambdify([ego.states], (BF_d.T*ego.g)[0]))        
+                self.RHS.append(lambdify([ego.states], -alpha*CBF-(BF_d.T*ego.f)[0]))
+                self.LHS.append(lambdify([ego.states], (BF_d.T*ego.g)))        
         if hasattr(env_bounds,'y_min'):
                 h = -(-ego.states[1]+env_bounds.y_min)
                 CBF = -h
                 BF_d = CBF.diff(Matrix([ego.states]))
                 self.h.append(lambdify([ego.states], h))
                 self.BF.append(lambdify([ego.states],CBF))
-                self.LHS.append(lambdify([ego.states], -alpha*CBF-(BF_d.T*ego.f)[0]))
-                self.RHS.append(lambdify([ego.states], (BF_d.T*ego.g)[0]))
+                self.RHS.append(lambdify([ego.states], -alpha*CBF-(BF_d.T*ego.f)[0]))
+                self.LHS.append(lambdify([ego.states], (BF_d.T*ego.g)))
         if hasattr(env_bounds,'y_max'):
                 h = -(ego.states[1]-env_bounds.y_max)
                 CBF = -h
                 BF_d = CBF.diff(Matrix([ego.states]))
                 self.h.append(lambdify([ego.states], h))
                 self.BF.append(lambdify([ego.states],CBF))
-                self.LHS.append(lambdify([ego.states], -alpha*CBF-(BF_d.T*ego.f)[0]))
-                self.RHS.append(lambdify([ego.states], (BF_d.T*ego.g)[0]))        # if hasattr(env_bounds,'f'):
+                self.RHS.append(lambdify([ego.states], -alpha*CBF-(BF_d.T*ego.f)[0]))
+                self.LHS.append(lambdify([ego.states], (BF_d.T*ego.g)))        # if hasattr(env_bounds,'f'):
         #         pass #To be filled later
 
 class Goal_Lyap(object):

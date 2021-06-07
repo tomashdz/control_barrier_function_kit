@@ -41,9 +41,9 @@ class Control_CBF(object):
                 #         if self.count > 1000:
                 #                 rospy.loginfo('reach counter!!')
                 #                 rospy.signal_shutdown('reach counter')
-                #         elif self.GoalInfo.set(x_r)<0:
-                #                 rospy.loginfo('reached GoalInfo set!!')
-                #                 rospy.signal_shutdown('reached GoalInfo set')
+                #         elif self.GoalInfo.h(x_r)<0:
+                #                 rospy.loginfo('reached GoalInfo h!!')
+                #                 rospy.signal_shutdown('reached GoalInfo h')
 
         def cbf_controller_compute(self):
                 x_r = self.ego.currState
@@ -78,7 +78,7 @@ class Control_CBF(object):
                 minDist = min(Dists)
                 minJ = np.where(Dists == minDist)
 
-                numQPvars = len(u_s)+2*len(UnsafeList)+len(Map.h)+1
+                numQPvars = len(u_s)+len(UnsafeList)+len(Map.h)+1
                 numConstraints = 2*len(u_s)+2*len(UnsafeList)+len(Map.h)+2
 
                 A = np.zeros((numConstraints,numQPvars))
@@ -87,9 +87,9 @@ class Control_CBF(object):
                 for j in range(len(UnsafeList)):
                         # CBF Constraints        
                         A[2*j, np.arange(len(u_s))]  = UnsafeList[j].LHS(x_r, UnsafeList[j].agent.currState)[0]
-                        A[2*j, len(u_s)+2*j] = -1
+                        A[2*j, len(u_s)+j] = -1
                         b[2*j] = UnsafeList[j].RHS(x_r, UnsafeList[j].agent.currState)  
-                        A[2*j+1, len(u_s)+2*j] = -1
+                        A[2*j+1, len(u_s)+j] = -1
                         b[2*j+1] = 0
 
 
@@ -102,28 +102,29 @@ class Control_CBF(object):
                 A[2*len(UnsafeList)+3,1] = -1; b[2*len(UnsafeList)+3] = -self.ego.inputRange[1,0]
                 
                 # Adding map constraints
-                for j in range(len(Map.set)):
-                        A[2*len(UnsafeList)+2*len(u_s)+j,np.append(np.arange(len(u_s)),[len(u_s)+2*len(UnsafeList)+j])] = [Map.setDer[j](x_r,[1, 0]), Map.setDer[j](x_r,[0, 1]), -1]
-                        b[2*len(UnsafeList)+2*len(u_s)+j] = -Map.CBF[j](x_r)
+                for j in range(len(Map.h)):
+                        A[2*len(UnsafeList)+2*len(u_s)+j, np.arange(len(u_s))] = Map.LHS[j](x_r)[0]
+                        A[2*len(UnsafeList)+2*len(u_s)+j, len(u_s)+len(UnsafeList)+j] = -1
+                        b[2*len(UnsafeList)+2*len(u_s)+j-1] = Map.RHS[j](x_r)
 
                 # Adding GoalInfo based Lyapunov !!!!!!!!!!!!!!!!! Needs to be changed for a different example 
-                A[2*len(UnsafeList)+2*len(u_s)+len(Map.set),0:2] = [GoalInfo.Lyap(x_r,[1,0]), GoalInfo.Lyap(x_r,[0, 1])]
-                A[2*len(UnsafeList)+2*len(u_s)+len(Map.set),-1] = -1
-                b[2*len(UnsafeList)+2*len(u_s)+len(Map.set)] = 0
-                A[2*len(UnsafeList)+2*len(u_s)+len(Map.set)+1,-1] = 1
-                b[2*len(UnsafeList)+2*len(u_s)+len(Map.set)+1] = np.finfo(float).eps+1
+                A[2*len(UnsafeList)+2*len(u_s)+len(Map.h),0:2] = [GoalInfo.Lyap(x_r,[1,0]), GoalInfo.Lyap(x_r,[0, 1])]
+                A[2*len(UnsafeList)+2*len(u_s)+len(Map.h),-1] = -1
+                b[2*len(UnsafeList)+2*len(u_s)+len(Map.h)] = 0
+                A[2*len(UnsafeList)+2*len(u_s)+len(Map.h)+1,-1] = 1
+                b[2*len(UnsafeList)+2*len(u_s)+len(Map.h)+1] = np.finfo(float).eps+1
                 
-                H = np.zeros((len(u_s)+2*len(UnsafeList)+len(Map.set)+1,len(u_s)+2*len(UnsafeList)+len(Map.set)+1))
+                H = np.zeros((len(u_s)+2*len(UnsafeList)+len(Map.h)+1,len(u_s)+2*len(UnsafeList)+len(Map.h)+1))
                 H[0,0] = 0
                 H[1,1] = 0
 
-                ff = np.zeros((len(u_s)+2*len(UnsafeList)+len(Map.set)+1,1))
+                ff = np.zeros((len(u_s)+2*len(UnsafeList)+len(Map.h)+1,1))
                 for j in range(len(UnsafeList)):
                         ff[len(u_s)+2*j] = 65
                         H[len(u_s)+2*j+1,len(u_s)+2*j+1] = 10000
                         # ff[len(u_s)+2*j+1] = 50* CBFList.CBF(x_r, x_o[minJ[0][0]][0:2])
 
-                ff[len(u_s)+2*len(UnsafeList):len(u_s)+2*len(UnsafeList)+len(Map.set)] = 20
+                ff[len(u_s)+2*len(UnsafeList):len(u_s)+2*len(UnsafeList)+len(Map.h)] = 20
                 ff[-1] = np.ceil(self.count/100.0)
         
 
@@ -137,17 +138,17 @@ class Control_CBF(object):
                         uq = [0,0]
                         rospy.loginfo('infeasible QP')
                 
-                if findBestCommandAnyway and len(uq[2:len(uq)-2*len(Map.set)-1:2])>0:   # If humans are around and findbestcommand active
+                if findBestCommandAnyway and len(uq[2:len(uq)-2*len(Map.h)-1:2])>0:   # If humans are around and findbestcommand active
                         if InUnsafe:
                                 self.trajs.risk.append(1.0)
                         else:
-                                r = np.zeros(len(uq[2:len(uq)-2*len(Map.set)-1:2]))
-                                for k in range(len(uq[2:len(uq)-2*len(Map.set)-1:2])):
+                                r = np.zeros(len(uq[2:len(uq)-2*len(Map.h)-1:2]))
+                                for k in range(len(uq[2:len(uq)-2*len(Map.h)-1:2])):
                                         r[k] = min(1, max(0,1-(1-CBFList.CBF(x_r, x_o[UnsafeList[k]][0:2]))*exp(-uq[2*k+2]*T)))
                                 self.trajs.risk.append(max(r))    
-                elif not findBestCommandAnyway and len(uq[2:len(uq)-len(Map.set)-1])>0:
-                        r = np.zeros(len(uq[2:len(uq)-len(Map.set)-1]))
-                        for k in range(len(uq[2:len(uq)-len(Map.set)-1])):
+                elif not findBestCommandAnyway and len(uq[2:len(uq)-len(Map.h)-1])>0:
+                        r = np.zeros(len(uq[2:len(uq)-len(Map.h)-1]))
+                        for k in range(len(uq[2:len(uq)-len(Map.h)-1])):
                                 r[k] = min(1, max(0,1-(1-CBFList.CBF(x_r, x_o[UnsafeList[k]][0:2]))*exp(-uq[k+2]*T)))
                         self.trajs.risk.append(max(r))
                         if max(r)>0.1:

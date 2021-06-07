@@ -110,7 +110,7 @@ if __name__ == '__main__':
     G = Matrix(np.eye(len(states)))
     D = Matrix(np.eye(2))
     # agent = Stochastic('agent',states, inputs, f, None, C, G = G , D= D)
-    agent_system = System('agent',states, inputs, f)   
+    agent_system = System('agent1',states, inputs, f)   
     # One agent instance is enough for all agents of the same type, if we have other types of agents,
     # we can create that, we may need to think about a way to assign agents to system
     print(agent_system.system_details())

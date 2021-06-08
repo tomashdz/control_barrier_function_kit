@@ -1,4 +1,4 @@
-#!/usr/bin/env python 
+#!/usr/bin/env python
 
 import argparse
 import rospy
@@ -17,7 +17,7 @@ from geometry_msgs.msg import Twist
 from geometry_msgs.msg import PoseStamped
 from geometry_msgs.msg import Vector3
 from nav_msgs.msg import Odometry
-from gazebo_msgs.msg import ModelState 
+from gazebo_msgs.msg import ModelState
 from gazebo_msgs.srv import GetWorldProperties, GetModelState, GetModelStateRequest
 
 # ROS others
@@ -34,10 +34,10 @@ def strList2SympyMatrix(str_list):
 
 
 def appr_unicycle(states, inputs, l):
-    """This function defines approximate unicycle model 
+    """This function defines approximate unicycle model
 
     Args:
-        states_str (list): name list of system states 
+        states_str (list): name list of system states
         inputs_str (list): name list of system inputs
 
     Returns:
@@ -54,10 +54,10 @@ def appr_unicycle(states, inputs, l):
 
 def  agent_break(states, inputs, radi, multi):
     """This function defines agent model with the assumption that the agent maintains its velocities
-    in the x and y direction unless it is close to the ego when it slows down 
+    in the x and y direction unless it is close to the ego when it slows down
 
     Args:
-        states (Sympy matrix): vector of symbolic system states 
+        states (Sympy matrix): vector of symbolic system states
         inputs (Sympy matrix): vector of symbolic system inputs
 
     Returns:
@@ -76,10 +76,10 @@ def  agent_break(states, inputs, radi, multi):
 
 def  careless_agent(states, inputs):
     """This function defines agent model with the assumption that the agent maintains its velocities
-    in the x and y direction unless it is close to the ego when it slows down 
+    in the x and y direction unless it is close to the ego when it slows down
 
     Args:
-        states (Sympy matrix): vector of symbolic system states 
+        states (Sympy matrix): vector of symbolic system states
         inputs (Sympy matrix): vector of symbolic system inputs
 
     Returns:
@@ -101,7 +101,7 @@ def  careless_agent(states, inputs):
 if __name__ == '__main__':
     """This is main
     """
-    
+
     # assume we have read the names of agents from ROS and stored them here
 
     agentnames = ['agent','agent1']
@@ -116,8 +116,7 @@ if __name__ == '__main__':
     C = Matrix([[1,0,0],[0,1,0]])
     inputRange = np.array([[-0.33,0.33],[-0.3,0.3]])
     # ego_system = System('ego', states, inputs, f, g)
-    ego_system = System('HSR', states, inputs, f, g, None, inputRange)   
-    
+    ego_system = System('HSR', states, inputs, f, g, None, inputRange)
     print(ego_system.system_details())
 
     # AGENTS #
@@ -134,14 +133,14 @@ if __name__ == '__main__':
     G = Matrix(np.eye(len(states)))
     D = Matrix(np.eye(2))
     # agent = Stochastic('agent',states, inputs, f, None, C, G = G , D= D)
-    agent_system = System('agent1',states, inputs, f)   
+    agent_system = System('agent1',states, inputs, f)
     # One agent instance is enough for all agents of the same type, if we have other types of agents,
     # we can create that, we may need to think about a way to assign agents to system
     print(agent_system.system_details())
 
 
     # agent2
-    agent_system2 = System('agent2',states, inputs, f)   
+    agent_system2 = System('agent2',states, inputs, f)
     # One agent instance is enough for all agents of the same type, if we have other types of agents,
     # we can create that, we may need to think about a way to assign agents to system
     print(agent_system.system_details())
@@ -152,18 +151,18 @@ if __name__ == '__main__':
     # Define h such that h(x)<=0 defines unsafe region
     h = lambda x, y, UnsafeRadius : (x[0]-y[0])**2+(x[1]-y[1])**2-(UnsafeRadius+l)**2
     h1 = lambda x, y: h(x,y,UnsafeRadius)
-    B = lambda x, y: -h(x,y,UnsafeRadius) #B initially negative, so Bdot<= -aB 
-    
+    B = lambda x, y: -h(x,y,UnsafeRadius) #B initially negative, so Bdot<= -aB
+
     CBF1 = CBF(h1, B, ego_system, agent_system)
     print(CBF1.details())
 
     CBF2 = CBF(h1, B, ego_system, agent_system2)
     print(CBF2.details())
-    
+
     # Enviroment Bounds
     env_bounds = type('', (), {})()
     env_bounds.y_min = -1.2
-    env_bounds.y_max = 1 
+    env_bounds.y_max = 1
     corridorMap = Map_CBF(env_bounds,ego_system)
 
     # Goal set description

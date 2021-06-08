@@ -32,7 +32,7 @@ class CBF(object):
 
         # BF_d2 =  self.BF.diff(self.x_o_s,2)
         # UnsafeInfo.CBF = lambdify([ego.states,self.x_o_s], CBF)
-    
+
     def details(self):
         return '{}\n {}\n {}\n'.format(self.h(*self.states), self.BF(*self.states), self.states)
 
@@ -71,7 +71,7 @@ class Map_CBF(object):
                 self.h.append(lambdify([ego.states], h))
                 self.BF.append(lambdify([ego.states],CBF))
                 self.RHS.append(lambdify([ego.states], -alpha*CBF-(BF_d.T*ego.f)[0]))
-                self.LHS.append(lambdify([ego.states], (BF_d.T*ego.g)))        
+                self.LHS.append(lambdify([ego.states], (BF_d.T*ego.g)))
         if hasattr(env_bounds,'y_min'):
                 h = -(-ego.states[1]+env_bounds.y_min)
                 CBF = -h
@@ -95,4 +95,3 @@ class Goal_Lyap(object):
         self.set = goal_set_func
         GoalSym = goal_set_func(ego.states)
         self.Lyap = lambdify([ego.states,ego.inputs],GoalSym.diff(ego.states).T*ego.dx)
-    

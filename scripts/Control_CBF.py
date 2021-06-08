@@ -2,9 +2,9 @@
 from gazebo_msgs.srv import GetWorldProperties, GetModelState, GetModelStateRequest
 import numpy as np
 import rospy
-import matplotlib.pyplot as plt  
+import matplotlib.pyplot as plt
 import cvxopt as cvxopt
-     
+
 def cvxopt_solve_qp(P, q, G=None, h=None, A=None, b=None):
     P = .5 * (P + P.T)  # make sure P is symmetric
     args = [cvxopt.matrix(P), cvxopt.matrix(q)]
@@ -19,7 +19,7 @@ def cvxopt_solve_qp(P, q, G=None, h=None, A=None, b=None):
         return None
     return np.array(sol['x']).reshape((P.shape[1],))
 
-class Control_CBF(object):               
+class Control_CBF(object):
         def __init__(self, connected_system, goal_func, MapInfo , P = None, Q = None, IncludeRadius = 10):  # make sure ego is the system with which CBF is created 
                 self.connected_system = connected_system
                 self.GoalInfo = goal_func
@@ -50,7 +50,7 @@ class Control_CBF(object):
 
                 u = self.cbf_controller_compute()
 
-                self.connected_system.publish(u)                         
+                self.connected_system.publish(u)
 
                 #         if self.count > 1000:
                 #                 rospy.loginfo('reach counter!!')
@@ -78,7 +78,7 @@ class Control_CBF(object):
                 CBFList = CBFList
                 GoalInfo = self.GoalInfo
                 Map = self.MapInfo
-                
+
                 UnsafeList = []
                 Dists = []
                 for CBF in CBFList:
@@ -99,24 +99,24 @@ class Control_CBF(object):
 
                 # A = np.zeros((numConstraints,numQPvars))
                 # b = np.zeros(numConstraints)
-                
+
                 # for j in range(len(UnsafeList)):
-                #         # CBF Constraints        
+                #         # CBF Constraints
                 #         A[2*j, np.arange(len(u_s))]  = UnsafeList[j].LHS(x_r, UnsafeList[j].agent.currState)[0]
                 #         A[2*j, len(u_s)+j] = -1
-                #         b[2*j] = UnsafeList[j].RHS(x_r, UnsafeList[j].agent.currState)  
+                #         b[2*j] = UnsafeList[j].RHS(x_r, UnsafeList[j].agent.currState)
                 #         A[2*j+1, len(u_s)+j] = -1
                 #         b[2*j+1] = 0
 
 
 
-                
+
                 # # Adding U constraint
                 # A[2*len(UnsafeList),0] = 1; b[2*len(UnsafeList)] = ego.inputRange[0,1]
                 # A[2*len(UnsafeList)+1,0] = -1;  b[2*len(UnsafeList)+1] = -ego.inputRange[0,0]
                 # A[2*len(UnsafeList)+2,1] = 1; b[2*len(UnsafeList)+2] = ego.inputRange[1,1]
                 # A[2*len(UnsafeList)+3,1] = -1; b[2*len(UnsafeList)+3] = -ego.inputRange[1,0]
-                
+
                 # # Adding map constraints
                 # for j in range(len(Map.h)):
                 #         A[2*len(UnsafeList)+2*len(u_s)+j, np.arange(len(u_s))] = Map.LHS[j](x_r)[0]
@@ -129,7 +129,7 @@ class Control_CBF(object):
                 # b[2*len(UnsafeList)+2*len(u_s)+len(Map.h)] = 0
                 # A[2*len(UnsafeList)+2*len(u_s)+len(Map.h)+1,-1] = 1
                 # b[2*len(UnsafeList)+2*len(u_s)+len(Map.h)+1] = np.finfo(float).eps+1
-                
+
                 # H = np.zeros((numQPvars,numQPvars))
                 # H[0,0] = 0
                 # H[1,1] = 0
@@ -147,7 +147,7 @@ class Control_CBF(object):
 
                 A = np.zeros((numConstraints,numQPvars))
                 b = np.zeros(numConstraints)
-                
+
                 for j in range(len(UnsafeList)):
                         # CBF Constraints
                         try: 
@@ -159,29 +159,27 @@ class Control_CBF(object):
 
                         A[j, np.arange(len(u_s))]  = UnsafeList[j].LHS(x_r, UnsafeList[j].agent.currState)[0]
                         A[j, len(u_s)+j] = -1
-                        b[j] = UnsafeList[j].RHS(x_r, UnsafeList[j].agent.currState, mean_inp)  
- 
+                        b[j] = UnsafeList[j].RHS(x_r, UnsafeList[j].agent.currState, mean_inp)
 
-                
                 # Adding U constraint
                 A[len(UnsafeList),0] = 1; b[len(UnsafeList)] = ego.inputRange[0,1]
                 A[len(UnsafeList)+1,0] = -1;  b[len(UnsafeList)+1] = -ego.inputRange[0,0]
                 A[len(UnsafeList)+2,1] = 1; b[len(UnsafeList)+2] = ego.inputRange[1,1]
                 A[len(UnsafeList)+3,1] = -1; b[len(UnsafeList)+3] = -ego.inputRange[1,0]
-                
+
                 # Adding map constraints
                 for j in range(len(Map.h)):
                         A[len(UnsafeList)+2*len(u_s)+j, np.arange(len(u_s))] = Map.LHS[j](x_r)[0]
                         A[len(UnsafeList)+2*len(u_s)+j, len(u_s)+len(UnsafeList)+j] = -1
                         b[len(UnsafeList)+2*len(u_s)+j-1] = Map.RHS[j](x_r)
 
-                # Adding GoalInfo based Lyapunov !!!!!!!!!!!!!!!!! Needs to be changed for a different example 
+                # Adding GoalInfo based Lyapunov !!!!!!!!!!!!!!!!! Needs to be changed for a different example
                 A[len(UnsafeList)+2*len(u_s)+len(Map.h),0:2] = [GoalInfo.Lyap(x_r,[1,0]), GoalInfo.Lyap(x_r,[0, 1])]
                 A[len(UnsafeList)+2*len(u_s)+len(Map.h),-1] = -1
                 b[len(UnsafeList)+2*len(u_s)+len(Map.h)] = 0
                 A[len(UnsafeList)+2*len(u_s)+len(Map.h)+1,-1] = 1
                 b[len(UnsafeList)+2*len(u_s)+len(Map.h)+1] = np.finfo(float).eps+1
-                
+
                 H = np.zeros((numQPvars,numQPvars))
                 H[0,0] = 0
                 H[1,1] = 0
@@ -191,7 +189,7 @@ class Control_CBF(object):
                         H[len(u_s)+j,len(u_s)+j] = 10000      # To reward not using the slack variables when not required
 
                 for j in range(len(Map.h)):
-                        H[len(u_s)+len(UnsafeList)+j,len(u_s)+len(UnsafeList)+j] = 1 
+                        H[len(u_s)+len(UnsafeList)+j,len(u_s)+len(UnsafeList)+j] = 1
                 ff[-1] = np.ceil(self.count/100.0)
 
 
@@ -207,5 +205,5 @@ class Control_CBF(object):
                 if uq is None:
                         uq = [0,0]
                         rospy.loginfo('infeasible QP')
-        
+
                 return uq

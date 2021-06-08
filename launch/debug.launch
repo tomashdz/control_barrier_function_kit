@@ -1,6 +1,8 @@
 <?xml version="1.0"?>
+
 <launch>
-	<!-- agent order -->
-	<node pkg="Risk-based-Stochastic-Control-Barrier-Functions-" type="agent.py" name="agent1_controller" output="screen" args="--model_name agent1">
+
+	<node pkg="Risk-based-Stochastic-Control-Barrier-Functions-" type="HSR_control.py" name="HSR_controller">
 	</node>
+
 </launch>

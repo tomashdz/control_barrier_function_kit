@@ -132,9 +132,12 @@ class Connected_system(object):
                 self.CBFList[i].agent.add_state_traj(state,time)
     
     def publish(self, u):
+        now = rospy.get_rostime()
+        time = now.secs+now.nsecs*pow(10,-9)  
         vel_msg = Twist()
         vel_msg.linear.x  = u[0]
         vel_msg.angular.z = u[1]
+        self.ego.add_control_traj(u,time)
         self.vw_publisher.publish(vel_msg)
        
 

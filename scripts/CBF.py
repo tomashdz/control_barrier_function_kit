@@ -27,7 +27,7 @@ class CBF(object):
         alpha = 1
         BFsym = self.BF(*self.states)
         BF_d = BFsym.diff(Matrix([ego.states,agent.states]))
-        self.RHS = lambdify([ego.states,agent.states], -alpha*BFsym-(BF_d.T*Matrix([ego.f,agent.f]))[0])
+        self.RHS = lambdify([ego.states, agent.states, agent.inputs], -alpha*BFsym-(BF_d.T*Matrix([ego.f,agent.f]))[0])
         self.LHS = lambdify([ego.states,agent.states], (Matrix(BF_d[:ego.nDim]).T*ego.g))
 
         # BF_d2 =  self.BF.diff(self.x_o_s,2)

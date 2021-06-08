@@ -62,15 +62,36 @@ def  agent_break(states, inputs, radi, multi):
         f (symbolic expressions): to describe model of the system as dx = f
     """
     if states.shape[0] != 3 or inputs.shape[0] != 2:
-        raise ValueError("agent_break model has 3 states and 2 inputs")
+        raise ValueError("agent_break model has 3 states and 3 inputs")
 
     c = multi
     dx = (states[0]-inputs[0])*exp(c*(radi-(states[0]-inputs[0])**2))
     dy = (states[1]-inputs[1])*exp(c*(radi-(states[1]-inputs[1])**2))
     dtetha = 1/(1+(dy/dx)**2)
+
     f = Matrix([dx, dy, dtetha])
     return f
 
+def  careless_agent(states, inputs):
+    """This function defines agent model with the assumption that the agent maintains its velocities
+    in the x and y direction unless it is close to the ego when it slows down 
+
+    Args:
+        states (Sympy matrix): vector of symbolic system states 
+        inputs (Sympy matrix): vector of symbolic system inputs
+
+    Returns:
+        f (symbolic expressions): to describe model of the system as dx = f
+    """
+    if states.shape[0] != 3 or inputs.shape[0] != 3:
+        raise ValueError("careless_agent model has 3 states and 3 inputs")
+
+    dx = inputs[0]
+    dy = inputs[1]
+    dtetha = inputs[2]
+
+    f = Matrix([dx, dy, dtetha])
+    return f
 
 
 
@@ -100,11 +121,12 @@ if __name__ == '__main__':
     # AGENTS #
     # agent1
     states_str = ['xo_0', 'xo_1', 'xo_2']
-    inputs_str = ['xr_0', 'xr_1']
+    # inputs_str = ['xr_0', 'xr_1']
+    inputs_str = ['uo_0','uo_1','uo_2']
 
     states = strList2SympyMatrix(states_str)
     inputs = strList2SympyMatrix(inputs_str)
-    f = agent_break(states, inputs, 1, 10)
+    f = careless_agent(states, inputs)
     g = None
     C = Matrix([[1,0,0,0],[0,1,0,0]])
     G = Matrix(np.eye(len(states)))

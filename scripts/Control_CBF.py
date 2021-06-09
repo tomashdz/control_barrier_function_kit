@@ -20,15 +20,12 @@ def cvxopt_solve_qp(P, q, G=None, h=None, A=None, b=None):
     return np.array(sol['x']).reshape((P.shape[1],))
 
 class Control_CBF(object):
-        def __init__(self, connected_system, goal_func, MapInfo , P = None, Q = None, IncludeRadius = 10):  # make sure ego is the system with which CBF is created 
+        def __init__(self, connected_system, goal_func, MapInfo , IncludeRadius = 10):  # make sure ego is the system with which CBF is created 
                 self.connected_system = connected_system
                 self.GoalInfo = goal_func
                 self.MapInfo = MapInfo
-                self.P = 1
-                self.Q = 1
                 self.IncludeRadius = IncludeRadius
                 self.count = 0 # num of times control_callback is called
-                self.flag = 0
 
 
         def controller_callback(self, event):

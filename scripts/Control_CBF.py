@@ -150,16 +150,17 @@ class Control_CBF(object):
                 
                 for j in range(len(UnsafeList)):
                         # CBF Constraints
+                        x_o = UnsafeList[j].agent.currState
                         try: 
-                                dx = np.array(UnsafeList[j].agent.state_traj[-4:-1][-1][1])-np.array(UnsafeList[j].agent.state_traj[-4:-1][0][1])
-                                dt = UnsafeList[j].agent.state_traj[-4:-1][-1][0]-UnsafeList[j].agent.state_traj[-4:-1][0][0]
+                                dx = np.array(UnsafeList[j].agent.state_traj[-5:-1][-1][1])-np.array(UnsafeList[j].agent.state_traj[-5:-1][0][1])
+                                dt = UnsafeList[j].agent.state_traj[-5:-1][-1][0]-UnsafeList[j].agent.state_traj[-5:-1][0][0]
                                 mean_inp = dx/dt
                         except:
                                 mean_inp = [0,0,0]
 
-                        A[j, np.arange(len(u_s))]  = UnsafeList[j].LHS(x_r, UnsafeList[j].agent.currState)[0]
+                        A[j, np.arange(len(u_s))]  = UnsafeList[j].LHS(x_r, x_o)[0]
                         A[j, len(u_s)+j] = -1
-                        b[j] = UnsafeList[j].RHS(x_r, UnsafeList[j].agent.currState, mean_inp)  
+                        b[j] = UnsafeList[j].RHS(x_r, x_o, mean_inp)  
  
 
                 
@@ -173,7 +174,7 @@ class Control_CBF(object):
                 for j in range(len(Map.h)):
                         A[len(UnsafeList)+2*len(u_s)+j, np.arange(len(u_s))] = Map.LHS[j](x_r)[0]
                         A[len(UnsafeList)+2*len(u_s)+j, len(u_s)+len(UnsafeList)+j] = -1
-                        b[len(UnsafeList)+2*len(u_s)+j-1] = Map.RHS[j](x_r)
+                        b[len(UnsafeList)+2*len(u_s)+j] = Map.RHS[j](x_r)
 
                 # Adding GoalInfo based Lyapunov !!!!!!!!!!!!!!!!! Needs to be changed for a different example 
                 A[len(UnsafeList)+2*len(u_s)+len(Map.h),0:2] = [GoalInfo.Lyap(x_r,[1,0]), GoalInfo.Lyap(x_r,[0, 1])]
@@ -188,7 +189,7 @@ class Control_CBF(object):
 
                 ff = np.zeros((numQPvars,1))
                 for j in range(len(UnsafeList)):
-                        H[len(u_s)+j,len(u_s)+j] = 10000      # To reward not using the slack variables when not required
+                        H[len(u_s)+j,len(u_s)+j] = 100      # To reward not using the slack variables when not required
 
                 for j in range(len(Map.h)):
                         H[len(u_s)+len(UnsafeList)+j,len(u_s)+len(UnsafeList)+j] = 1 

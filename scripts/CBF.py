@@ -54,7 +54,7 @@ class Map_CBF(object):
         self.BF = []
         self.LHS = []
         self.RHS = []
-        alpha = 1
+        alpha = 2
 
         if hasattr(env_bounds,'x_min'):
                 h = -(-ego.states[0]+env_bounds.x_min)   # h(x)<=0 defines unsafe region

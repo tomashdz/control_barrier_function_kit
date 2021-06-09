@@ -3,7 +3,7 @@
 	// Extension identifier format: ${publisher}.${name}. Example: vscode.csharp
 
 	// List of extensions which should be recommended for users of this workspace.
-	"recommendations": ["ms-iot.vscode-ros","aaron-bond.better-comments","hediet.vscode-drawio","ms-toolsai.jupyter","shd101wyy.markdown-preview-enhanced","goessner.mdmath","2gua.rainbow-brackets","shardulm94.trailing-spaces"
+	"recommendations": ["esbenp.prettier-vscode","ms-iot.vscode-ros","aaron-bond.better-comments","hediet.vscode-drawio","ms-toolsai.jupyter","shd101wyy.markdown-preview-enhanced","goessner.mdmath","2gua.rainbow-brackets","shardulm94.trailing-spaces"
 
 	],
 	// List of extensions recommended by VS Code that should not be recommended for users of this workspace.

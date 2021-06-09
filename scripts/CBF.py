@@ -2,6 +2,7 @@ from sympy import symbols, Matrix, sin, cos, lambdify, exp, sqrt, log, diff
 import numpy as np
 
 
+
 class CBF(object):
     def __init__(self, h, BF, ego, agent):
         self.h = h

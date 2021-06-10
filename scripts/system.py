@@ -36,16 +36,19 @@ class System(object):
         self.nDim = len(states)
         self.full_observability = True  #! Changed the name of the attribute # If true the states are fully and precisely observable
         if g is not None:
-            # self.g = Matrix(g) #! This should already be given as Matrix
+            self.g = Matrix(g) #! This should already be given as Matrix
             try:  #! Try catch should not be used for this. We can just check dimensions
                 self.f+self.g*self.inputs
             except:
                 raise ValueError("Inappropriate g or inputs sizes")
             self.dx = self.f+self.g*self.inputs
         else:
+            self.g = None
             self.dx = self.f
-         # TODO: Check the observability given C, the assert part may need more attention too
-        if C is not None:
+        # TODO: Check the observability given C, the assert part may need more attention too
+        if C is None:
+            self.C = C
+        else:
             if np.array(C).shape != np.eye(self.nDim).shape or not p.allclose(np.eye(self.nDim),C):
                 assert np.array(C).shape[1] == self.nDim, "inappropriate C shape"   #y = CX
                 self.C = Matrix(C) #! This should be given as Matrix, no need to cast again

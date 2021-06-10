@@ -49,12 +49,12 @@ class Control_CBF(object):
 
                 self.connected_system.publish(u)
 
-                #         if self.count > 1000:
-                #                 rospy.loginfo('reach counter!!')
-                #                 rospy.signal_shutdown('reach counter')
-                #         elif self.GoalInfo.h(x_r)<0:
-                #                 rospy.loginfo('reached GoalInfo h!!')
-                #                 rospy.signal_shutdown('reached GoalInfo h')
+                if self.count > 1000:
+                        rospy.loginfo('reached counter!!')
+                        rospy.signal_shutdown('reach counter')
+                elif self.GoalInfo.set(self.connected_system.ego.currState)<0:
+                        rospy.loginfo('reached Goal set!!')
+                        rospy.signal_shutdown('reached GoalInfo h')
 
         def cbf_controller_compute(self):
                 ego = self.connected_system.ego
@@ -185,7 +185,9 @@ class Control_CBF(object):
 
                 ff = np.zeros((numQPvars,1))
                 for j in range(len(UnsafeList)):
-                        H[len(u_s)+j,len(u_s)+j] = 100      # To reward not using the slack variables when not required
+                        ff[len(u_s)+j] = 100      # To reward not using the slack variables when not required
+                        # H[len(u_s)+j,len(u_s)+j] = 100      # To reward not using the slack variables when not required
+
 
                 for j in range(len(Map.h)):
                         H[len(u_s)+len(UnsafeList)+j,len(u_s)+len(UnsafeList)+j] = 1
@@ -197,6 +199,7 @@ class Control_CBF(object):
 
                 try:
                         uq = cvxopt_solve_qp(H, ff, A, b)
+                        print(uq[1])
                 except ValueError:
                         uq = [0,0]
                         rospy.loginfo('Domain Error in cvx')

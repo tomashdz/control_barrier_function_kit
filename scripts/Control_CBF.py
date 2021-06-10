@@ -82,7 +82,7 @@ class Control_CBF(object):
                 UnsafeList = []
                 Dists = []
                 for CBF in CBFList:
-                        Dist = CBF.h(x_r, CBF.agent.currState)
+                        Dist = CBF.BF.h(x_r, CBF.agent.currState)
                         Dists.append(Dist)
                         if Dist<self.IncludeRadius:
                                 UnsafeList.append(CBF)
@@ -142,8 +142,8 @@ class Control_CBF(object):
                 #         ff[len(u_s)+len(UnsafeList)+j] = 1 
                 # ff[-1] = np.ceil(self.count/100.0)
 
-                numQPvars = len(u_s)+len(UnsafeList)+len(Map.h)+1
-                numConstraints = 2*len(u_s)+len(UnsafeList)+len(Map.h)+2
+                numQPvars = len(u_s)+len(UnsafeList)+len(Map.BF.h)+1
+                numConstraints = 2*len(u_s)+len(UnsafeList)+len(Map.BF.h)+2
 
                 A = np.zeros((numConstraints,numQPvars))
                 b = np.zeros(numConstraints)
@@ -157,9 +157,9 @@ class Control_CBF(object):
                         except:
                                 mean_inp = [0,0,0]
 
-                        A[j, np.arange(len(u_s))]  = UnsafeList[j].LHS(x_r, UnsafeList[j].agent.currState)[0]
+                        A[j, np.arange(len(u_s))]  = UnsafeList[j].BF.LHS(x_r, UnsafeList[j].agent.currState)[0]
                         A[j, len(u_s)+j] = -1
-                        b[j] = UnsafeList[j].RHS(x_r, UnsafeList[j].agent.currState, mean_inp)
+                        b[j] = UnsafeList[j].BF.RHS(x_r, UnsafeList[j].agent.currState, mean_inp)
 
                 # Adding U constraint
                 A[len(UnsafeList),0] = 1; b[len(UnsafeList)] = ego.inputRange[0,1]
@@ -168,17 +168,17 @@ class Control_CBF(object):
                 A[len(UnsafeList)+3,1] = -1; b[len(UnsafeList)+3] = -ego.inputRange[1,0]
 
                 # Adding map constraints
-                for j in range(len(Map.h)):
-                        A[len(UnsafeList)+2*len(u_s)+j, np.arange(len(u_s))] = Map.LHS[j](x_r)[0]
+                for j in range(len(Map.BF.h)):
+                        A[len(UnsafeList)+2*len(u_s)+j, np.arange(len(u_s))] = Map.BF.LHS[j](x_r)[0]
                         A[len(UnsafeList)+2*len(u_s)+j, len(u_s)+len(UnsafeList)+j] = -1
-                        b[len(UnsafeList)+2*len(u_s)+j-1] = Map.RHS[j](x_r)
+                        b[len(UnsafeList)+2*len(u_s)+j-1] = Map.BF.RHS[j](x_r)
 
                 # Adding GoalInfo based Lyapunov !!!!!!!!!!!!!!!!! Needs to be changed for a different example
-                A[len(UnsafeList)+2*len(u_s)+len(Map.h),0:2] = [GoalInfo.Lyap(x_r,[1,0]), GoalInfo.Lyap(x_r,[0, 1])]
-                A[len(UnsafeList)+2*len(u_s)+len(Map.h),-1] = -1
-                b[len(UnsafeList)+2*len(u_s)+len(Map.h)] = 0
-                A[len(UnsafeList)+2*len(u_s)+len(Map.h)+1,-1] = 1
-                b[len(UnsafeList)+2*len(u_s)+len(Map.h)+1] = np.finfo(float).eps+1
+                A[len(UnsafeList)+2*len(u_s)+len(Map.BF.h),0:2] = [GoalInfo.Lyap(x_r,[1,0]), GoalInfo.Lyap(x_r,[0, 1])]
+                A[len(UnsafeList)+2*len(u_s)+len(Map.BF.h),-1] = -1
+                b[len(UnsafeList)+2*len(u_s)+len(Map.BF.h)] = 0
+                A[len(UnsafeList)+2*len(u_s)+len(Map.BF.h)+1,-1] = 1
+                b[len(UnsafeList)+2*len(u_s)+len(Map.BF.h)+1] = np.finfo(float).eps+1
 
                 H = np.zeros((numQPvars,numQPvars))
                 H[0,0] = 0
@@ -188,7 +188,7 @@ class Control_CBF(object):
                 for j in range(len(UnsafeList)):
                         H[len(u_s)+j,len(u_s)+j] = 10000      # To reward not using the slack variables when not required
 
-                for j in range(len(Map.h)):
+                for j in range(len(Map.BF.h)):
                         H[len(u_s)+len(UnsafeList)+j,len(u_s)+len(UnsafeList)+j] = 1
                 ff[-1] = np.ceil(self.count/100.0)
 

@@ -140,3 +140,4 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 debugging_scripts/.tmuxinator.yml
+.vscode/c_cpp_properties.json

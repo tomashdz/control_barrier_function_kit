@@ -1,29 +1,31 @@
 from sympy import symbols, Matrix, sin, cos, lambdify, exp, sqrt, log, diff
-import numpy as np
-import rospy
 from geometry_msgs.msg import PoseStamped
 from geometry_msgs.msg import Vector3
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Twist
+import numpy as np
+import rospy
 
 # ROS others
 import tf
+
+
+
 class System(object):
 
-    """
+    """ System class
+
     Args:
         object (system class): creates object of a system, and includes methods for modifying it
 
     Returns:
         system object: the model describes dx = f(x) + g(x)*inputs , y = Cx where x is the system states
     """
-    ####TODO:TODO: check whether you need Matrix here or not
+    ####TODO: check whether you need Matrix here or not
 
     def __init__(self, name, states, inputs, f, g = None, C = None, inputRange = None):
         # TODO: Check the observability given C, the assert part may need more attention too
-        Full_states = True          # If true the states are fully and precisely meaurable and y = x
-        self.nDim = len(states)
-        self.name = name        # TODO: Do we need name??
+        self.name = name
         self.states = states
         self.inputs = inputs
         self.inputRange = inputRange
@@ -31,9 +33,11 @@ class System(object):
         self.state_traj = []
         self.control_traj = []
         self.currState = []
+        self.nDim = len(states)
+        self.full_observability = True  #! Changed the name of the attribute # If true the states are fully and precisely observable
         if g is not None:
-            self.g = Matrix(g)
-            try:
+            self.g = Matrix(g) #! This should already be given as Matrix
+            try:  #! Try catch should not be used for this. We can just check dimensions
                 self.f+self.g*self.inputs
             except:
                 raise ValueError("Inappropriate g or inputs sizes")
@@ -41,16 +45,14 @@ class System(object):
         else:
             self.g = None
             self.dx = self.f
-         # TODO: Check the observability given C, the assert part may need more attention too
+        # TODO: Check the observability given C, the assert part may need more attention too
         if C is None:
             self.C = C
         else:
             if np.array(C).shape != np.eye(self.nDim).shape or not p.allclose(np.eye(self.nDim),C):
                 assert np.array(C).shape[1] == self.nDim, "inappropriate C shape"   #y = CX
-                self.C = Matrix(C)
-                Full_states = False
-
-        self.Full_states = Full_states
+                self.C = Matrix(C) #! This should be given as Matrix, no need to cast again
+                self.full_observability = False
 
     def add_state_traj(self, state, time):
         self.currState = state
@@ -60,7 +62,7 @@ class System(object):
         self.control_traj.append([time, control[:]])
 
     def system_details(self):
-        return '{}\n {}\n {}\n {}\n {}\n {}\n {}\n'.format(self.name, self.states, self.inputs, self.f, self.g, self.C, self.Full_states)
+        return '{}\n {}\n {}\n {}\n {}\n {}\n {}\n'.format(self.name, self.states, self.inputs, self.f, self.g, self.C, self.full_observability)
 
 class Stochastic(System):
     def __init__(self, name, states, inputs, f, g = None, C = None, G = None, D= None): # G, and D
@@ -71,15 +73,15 @@ class Stochastic(System):
 
         if G is not None:
             assert np.array(G).shape[0] == nDim, "inappropriate G shape"   #dx = f(x)+Gdw
-            self.G = Matrix(G)
+            self.G = Matrix(G) #! This should be given as Matrix, no need to cast again
         else:
-            self.G = G
+            self.G = G #! I don't understand this if-else
         if D is not None:
             if self.C is None:
                 self.C = np.eye(nDim)
             assert np.array(D).shape[0] == self.model.C.shape[0]
-            self.D = Matrix(D)
-            self.Full_states = False
+            self.D = Matrix(D) #! This should be given as Matrix, no need to cast again
+            self.full_observability = False
 
 
 

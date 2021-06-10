@@ -44,7 +44,7 @@ class CBF(object):
             ego <class System>
             agent <class System>
         """
-        # TODO: Extend for stochacic (there is additional term there)
+        # TODO: Extend for stochastic (there is additional term there)
         # TODO: Extend for risk bounds (extra constraints)
 
         alpha = 1

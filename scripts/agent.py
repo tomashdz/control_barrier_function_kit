@@ -30,7 +30,7 @@ class Agent(object):
         state_msg.model_name = self.model.model_name
         state_msg.pose = result.pose
         state_msg.twist = result.twist
-        state_msg.pose.position.x = result.pose.position.x + 0.1*speed/freq
+        state_msg.pose.position.x = result.pose.position.x + 0.6*speed/freq
         resp = self.set_model_srv( state_msg )
         pose = PoseStamped()
         pose.pose = state_msg.pose

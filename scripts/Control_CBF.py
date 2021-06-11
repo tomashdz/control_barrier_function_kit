@@ -52,17 +52,17 @@ class Control_CBF(object):
                 if self.count > 1000:
                         rospy.loginfo('reached counter!!')
                         rospy.signal_shutdown('reach counter')
-                elif self.GoalInfo.set(self.connected_system.ego.currState)<0:
+                elif self.GoalInfo.set(self.connected_system.ego.curr_state)<0:
                         rospy.loginfo('reached Goal set!!')
                         rospy.signal_shutdown('reached GoalInfo h')
 
         def cbf_controller_compute(self):
                 ego = self.connected_system.ego
-                CBFList = self.connected_system.CBFList
-                x_r = ego.currState
+                cbf_list = self.connected_system.cbf_list
+                x_r = ego.curr_state
                 x_o = []
-                for CBF in CBFList:
-                        x_o.append(CBF.agent.currState)
+                for CBF in cbf_list:
+                        x_o.append(CBF.agent.curr_state)
                 u_s = ego.inputs
                 # if self.count>3:
                 # x_o_pre = np.array(self.trajs.actors[len(self.trajs.actors)-4])
@@ -72,14 +72,14 @@ class Control_CBF(object):
                 # else:
                 # u_o = np.zeros((len(x_o),len(self.robot.u_o)))
 
-                CBFList = CBFList
+                cbf_list = cbf_list
                 GoalInfo = self.GoalInfo
                 Map = self.MapInfo
 
                 UnsafeList = []
                 Dists = []
-                for CBF in CBFList:
-                        Dist = CBF.BF.h(x_r, CBF.agent.currState)
+                for CBF in cbf_list:
+                        Dist = CBF.BF.h(x_r, CBF.agent.curr_state)
                         Dists.append(Dist)
                         if Dist<self.IncludeRadius:
                                 UnsafeList.append(CBF)
@@ -99,9 +99,9 @@ class Control_CBF(object):
 
                 # for j in range(len(UnsafeList)):
                 #         # CBF Constraints
-                #         A[2*j, np.arange(len(u_s))]  = UnsafeList[j].LHS(x_r, UnsafeList[j].agent.currState)[0]
+                #         A[2*j, np.arange(len(u_s))]  = UnsafeList[j].LHS(x_r, UnsafeList[j].agent.curr_state)[0]
                 #         A[2*j, len(u_s)+j] = -1
-                #         b[2*j] = UnsafeList[j].RHS(x_r, UnsafeList[j].agent.currState)
+                #         b[2*j] = UnsafeList[j].RHS(x_r, UnsafeList[j].agent.curr_state)
                 #         A[2*j+1, len(u_s)+j] = -1
                 #         b[2*j+1] = 0
 
@@ -109,10 +109,10 @@ class Control_CBF(object):
 
 
                 # # Adding U constraint
-                # A[2*len(UnsafeList),0] = 1; b[2*len(UnsafeList)] = ego.inputRange[0,1]
-                # A[2*len(UnsafeList)+1,0] = -1;  b[2*len(UnsafeList)+1] = -ego.inputRange[0,0]
-                # A[2*len(UnsafeList)+2,1] = 1; b[2*len(UnsafeList)+2] = ego.inputRange[1,1]
-                # A[2*len(UnsafeList)+3,1] = -1; b[2*len(UnsafeList)+3] = -ego.inputRange[1,0]
+                # A[2*len(UnsafeList),0] = 1; b[2*len(UnsafeList)] = ego.input_range[0,1]
+                # A[2*len(UnsafeList)+1,0] = -1;  b[2*len(UnsafeList)+1] = -ego.input_range[0,0]
+                # A[2*len(UnsafeList)+2,1] = 1; b[2*len(UnsafeList)+2] = ego.input_range[1,1]
+                # A[2*len(UnsafeList)+3,1] = -1; b[2*len(UnsafeList)+3] = -ego.input_range[1,0]
 
                 # # Adding map constraints
                 # for j in range(len(Map.h)):
@@ -147,7 +147,7 @@ class Control_CBF(object):
 
                 for j in range(len(UnsafeList)):
                         # CBF Constraints
-                        x_o = UnsafeList[j].agent.currState
+                        x_o = UnsafeList[j].agent.curr_state
                         try:
                                 dx = np.array(UnsafeList[j].agent.state_traj[-5:-1][-1][1])-np.array(UnsafeList[j].agent.state_traj[-5:-1][0][1])
                                 dt = UnsafeList[j].agent.state_traj[-5:-1][-1][0]-UnsafeList[j].agent.state_traj[-5:-1][0][0]
@@ -161,10 +161,10 @@ class Control_CBF(object):
 
 
                 # Adding U constraint
-                A[len(UnsafeList),0] = 1; b[len(UnsafeList)] = ego.inputRange[0,1]
-                A[len(UnsafeList)+1,0] = -1;  b[len(UnsafeList)+1] = -ego.inputRange[0,0]
-                A[len(UnsafeList)+2,1] = 1; b[len(UnsafeList)+2] = ego.inputRange[1,1]
-                A[len(UnsafeList)+3,1] = -1; b[len(UnsafeList)+3] = -ego.inputRange[1,0]
+                A[len(UnsafeList),0] = 1; b[len(UnsafeList)] = ego.input_range[0,1]
+                A[len(UnsafeList)+1,0] = -1;  b[len(UnsafeList)+1] = -ego.input_range[0,0]
+                A[len(UnsafeList)+2,1] = 1; b[len(UnsafeList)+2] = ego.input_range[1,1]
+                A[len(UnsafeList)+3,1] = -1; b[len(UnsafeList)+3] = -ego.input_range[1,0]
 
                 # Adding map constraints
                 for j in range(len(Map.BF.h)):

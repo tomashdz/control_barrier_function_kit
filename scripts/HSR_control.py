@@ -114,7 +114,7 @@ if __name__ == '__main__':
     l = 0.1
     f, g = appr_unicycle(states, inputs, l)
     C = Matrix([[1,0,0],[0,1,0]])
-    inputRange = np.array([[-0.5,0.5],[-0.33,0.33]])
+    inputRange = np.array([[-0.3,0.3],[-0.3,0.3]])
     # ego_system = System('ego', states, inputs, f, g)
     ego_system = System('HSR', states, inputs, f, g, None, inputRange)
     print(ego_system.system_details())

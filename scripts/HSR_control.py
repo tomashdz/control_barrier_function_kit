@@ -111,7 +111,7 @@ if __name__ == '__main__':
 
     states = strList2SympyMatrix(states_str)
     inputs = strList2SympyMatrix(inputs_str)
-    l = 0.1
+    l = 0.05
     f, g = appr_unicycle(states, inputs, l)
     C = Matrix([[1,0,0],[0,1,0]])
     inputRange = np.array([[-0.3,0.3],[-0.3,0.3]])
@@ -147,9 +147,9 @@ if __name__ == '__main__':
 
 
 
-    UnsafeRadius = 0.5
+    UnsafeRadius = 0.8
     # Define h such that h(x)<=0 defines unsafe region
-    h = lambda x, y, UnsafeRadius : (x[0]-y[0])**2+(x[1]-y[1])**2-(UnsafeRadius+l)**2
+    h = lambda x, y, UnsafeRadius : (x[0] - y[0])**2 + (x[1] - y[1])**2 - (UnsafeRadius + l)**2
     h1 = lambda x, y: h(x,y,UnsafeRadius)
     B = lambda x, y: -h(x,y,UnsafeRadius) #B initially negative, so Bdot<= -aB
 

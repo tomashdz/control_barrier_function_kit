@@ -20,7 +20,7 @@ def cvxopt_solve_qp(P, q, G=None, h=None, A=None, b=None):
     return np.array(sol['x']).reshape((P.shape[1],))
 
 class Control_CBF(object):
-        def __init__(self, connected_system, goal_func, MapInfo , IncludeRadius = 10):  # make sure ego is the system with which CBF is created 
+        def __init__(self, connected_system, goal_func, MapInfo , IncludeRadius = 4):  # make sure ego is the system with which CBF is created 
                 self.connected_system = connected_system
                 self.GoalInfo = goal_func
                 self.MapInfo = MapInfo
@@ -60,9 +60,6 @@ class Control_CBF(object):
                 ego = self.connected_system.ego
                 cbf_list = self.connected_system.cbf_list
                 x_r = ego.curr_state
-                x_o = []
-                for CBF in cbf_list:
-                        x_o.append(CBF.agent.curr_state)
                 u_s = ego.inputs
                 # if self.count>3:
                 # x_o_pre = np.array(self.trajs.actors[len(self.trajs.actors)-4])
@@ -83,7 +80,6 @@ class Control_CBF(object):
                         Dists.append(Dist)
                         if Dist<self.IncludeRadius:
                                 UnsafeList.append(CBF)
-                        ai = 1
                 if min(Dists)<0:
                         InUnsafe = 1
                 else:
@@ -180,18 +176,20 @@ class Control_CBF(object):
                 b[len(UnsafeList)+2*len(u_s)+len(Map.BF.h)+1] = np.finfo(float).eps+1
 
                 H = np.zeros((numQPvars,numQPvars))
-                H[0,0] = 0
-                H[1,1] = 0
+                H[0,0] = .1
+                H[1,1] = .1
 
                 ff = np.zeros((numQPvars,1))
                 for j in range(len(UnsafeList)):
-                        ff[len(u_s)+j] = 100      # To reward not using the slack variables when not required
-                        # H[len(u_s)+j,len(u_s)+j] = 100      # To reward not using the slack variables when not required
+                        # ff[len(u_s)+j] = 3      # To reward not using the slack variables when not required
+                        H[len(u_s)+j,len(u_s)+j] = 50      # To reward not using the slack variables when not required
 
 
                 for j in range(len(Map.BF.h)):
-                        H[len(u_s)+len(UnsafeList)+j,len(u_s)+len(UnsafeList)+j] = 1
-                ff[-1] = np.ceil(self.count/100.0)
+                        # ff[len(u_s)+len(UnsafeList)+j] = 2
+                        H[len(u_s)+len(UnsafeList)+j, len(u_s)+len(UnsafeList)+j] = 5
+                # ff[-1] = np.ceil(self.count/100.0)
+                ff[-1] = 4
 
 
 

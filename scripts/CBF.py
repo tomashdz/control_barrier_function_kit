@@ -79,26 +79,45 @@ class Map_CBF(object):
 
         alpha = 2
 
-        if hasattr(env_bounds, 'x_min'):
-            # h(x)<=0 defines unsafe region
-            h = -(-ego.states[0]+env_bounds.x_min)
+        if hasattr(env_bounds,'x_min'):
+                h = -(-ego.states[0]+env_bounds.x_min)   # h(x)<=0 defines unsafe region
+                CBF = -h
+                BF_d = CBF.diff(Matrix([ego.states]))
+                self.BF.h.append(lambdify([ego.states], h))
+                self.BF.B.append(lambdify([ego.states], CBF))
+                self.BF.RHS.append(
+                    lambdify([ego.states], -alpha * CBF - (BF_d.T * ego.f)[0]))
+                self.BF.LHS.append(lambdify([ego.states], (BF_d.T * ego.g)))
+        if hasattr(env_bounds,'x_max'):
+                h = -(ego.states[0]-env_bounds.x_max)
+                CBF = -h
+                BF_d = CBF.diff(Matrix([ego.states]))
+                self.BF.h.append(lambdify([ego.states], h))
+                self.BF.B.append(lambdify([ego.states], CBF))
+                self.BF.RHS.append(
+                    lambdify([ego.states], -alpha * CBF - (BF_d.T * ego.f)[0]))
+                self.BF.LHS.append(lambdify([ego.states], (BF_d.T * ego.g)))
+        if hasattr(env_bounds,'y_min'):
+                h = -(-ego.states[1]+env_bounds.y_min)
+                CBF = -h
+                BF_d = CBF.diff(Matrix([ego.states]))
+                self.BF.h.append(lambdify([ego.states], h))
+                self.BF.B.append(lambdify([ego.states], CBF))
+                self.BF.RHS.append(
+                    lambdify([ego.states], -alpha * CBF - (BF_d.T * ego.f)[0]))
+                self.BF.LHS.append(lambdify([ego.states], (BF_d.T * ego.g)))
+        if hasattr(env_bounds,'y_max'):
+                h = -(ego.states[1]-env_bounds.y_max)
+                CBF = -h
+                BF_d = CBF.diff(Matrix([ego.states]))
+                self.BF.h.append(lambdify([ego.states], h))
+                self.BF.B.append(lambdify([ego.states], CBF))
+                self.BF.RHS.append(
+                    lambdify([ego.states], -alpha * CBF - (BF_d.T * ego.f)[0]))
+                self.BF.LHS.append(lambdify([ego.states], (BF_d.T * ego.g)))
+            #         pass #To be filled later
 
-        if hasattr(env_bounds, 'x_max'):
-            h = -(ego.states[0]-env_bounds.x_max)
 
-        if hasattr(env_bounds, 'y_min'):
-            h = -(-ego.states[1]+env_bounds.y_min)
-
-        if hasattr(env_bounds, 'y_max'):
-            h = -(ego.states[1]-env_bounds.y_max)
-
-        CBF = -h
-        BF_d = CBF.diff(Matrix([ego.states]))
-        self.BF.h.append(lambdify([ego.states], h))
-        self.BF.B.append(lambdify([ego.states], CBF))
-        self.BF.RHS.append(
-            lambdify([ego.states], -alpha * CBF - (BF_d.T * ego.f)[0]))
-        self.BF.LHS.append(lambdify([ego.states], (BF_d.T * ego.g)))
 
 class Goal_Lyap(object):
     def __init__(self, goal_set_func, ego):

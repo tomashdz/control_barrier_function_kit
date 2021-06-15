@@ -6,8 +6,8 @@
 	</include>
 
    	<!-- Launch cbf controller monitor (output console)-->
-	<node name="cbf_controller" pkg="Risk-based-Stochastic-Control-Barrier-Functions-" type="HSR_control.py" output="screen">
-	</node>
+	<!-- <node name="cbf_controller" pkg="Risk-based-Stochastic-Control-Barrier-Functions-" type="HSR_control.py" output="screen">
+	</node> -->
 
 	<!-- agent controller -->
 	<node pkg="Risk-based-Stochastic-Control-Barrier-Functions-" type="agent.py" name="agent1_controller" args="--model_name agent1">

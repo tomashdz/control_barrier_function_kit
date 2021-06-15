@@ -24,12 +24,12 @@ import tf
 
 
 def strList2SympyMatrix(str_list):
-    sympy_symbols = []
+    sympy_symbols_lst = []
     for istr in str_list:
-        sympySymbol = symbols(istr)
-        sympy_symbols.append(sympySymbol)
-    sympyMatrix = Matrix(sympy_symbols)
-    return sympyMatrix
+        sympy_symbol = symbols(istr)
+        sympy_symbols_lst.append(sympy_symbol)
+    sympy_matrix = Matrix(sympy_symbols_lst)
+    return sympy_matrix
 
 
 def appr_unicycle(states, inputs, l):
@@ -111,8 +111,8 @@ if __name__ == '__main__':
     inputs = strList2SympyMatrix(inputs_str)
     l = 0.05
     f, g = appr_unicycle(states, inputs, l)
-    C = Matrix([[1,0,0],[0,1,0]])
-    input_range = np.array([[-0.3,0.3],[-0.3,0.3]])
+    C = Matrix([[1, 0, 0], [0, 1, 0]])
+    input_range = np.array([[-0.3, 0.3], [-0.3, 0.3]])
     # ego_system = System('ego', states, inputs, f, g)
     ego_system = System('HSR', states, inputs, f, g, None, input_range)
     print(ego_system.system_details())
@@ -144,9 +144,12 @@ if __name__ == '__main__':
 
     unsafe_radius = 0.8
     # Define h such that h(x)<=0 defines unsafe region
-    h = lambda x, y, unsafe_radius : (x[0] - y[0])**2 + (x[1] - y[1])**2 - (unsafe_radius + l)**2
-    h1 = lambda x, y: h(x,y,unsafe_radius)
-    B = lambda x, y: -h(x,y,unsafe_radius) #B initially negative, so Bdot<= -aB
+    def h(x, y, unsafe_radius): return (
+        x[0] - y[0])**2 + (x[1] - y[1])**2 - (unsafe_radius + l)**2
+
+    def h1(x, y): return h(x, y, unsafe_radius)
+    # B initially negative, so Bdot<= -aB
+    def B(x, y): return -h(x, y, unsafe_radius)
 
     cbf1 = CBF(h1, B, ego_system, agent_system)
     print(cbf1.details())

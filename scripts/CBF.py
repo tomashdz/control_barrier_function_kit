@@ -51,7 +51,7 @@ class CBF(object):
         BFsym = self.BF.B(*self.states)
         BF_d = BFsym.diff(Matrix([ego.states, agent.states]))
         self.BF.RHS = lambdify([ego.states, agent.states, agent.inputs],
-                              - alpha * BFsym - (BF_d.T * Matrix([ego.f, agent.f]))[0])
+                               - alpha * BFsym - (BF_d.T * Matrix([ego.f, agent.f]))[0])
         self.BF.LHS = lambdify([ego.states, agent.states],
                                (Matrix(BF_d[:ego.nDim]).T * ego.g))
 
@@ -60,7 +60,6 @@ class CBF(object):
 
     def details(self):
         return '{}\n {}\n {}\n'.format(self.BF.h(*self.states), self.BF.B(*self.states), self.states)
-
 
 
 class Map_CBF(object):
@@ -100,6 +99,7 @@ class Map_CBF(object):
 
     def add_map_cbf():
         return sympyMatrix
+
 
 class Goal_Lyap(object):
     def __init__(self, goal_set_func, ego):

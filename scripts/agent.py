@@ -9,15 +9,19 @@ from std_msgs.msg import Header
 from gazebo_msgs.msg import ModelState
 from gazebo_msgs.srv import GetModelState, GetModelStateRequest, SetModelState
 
-freq = 10 #Hz
-speed = -0.2 #m/s
+freq = 10  # Hz
+speed = -0.2  # m/s
+
 
 class Agent(object):
     def __init__(self, model_name):
-        rospy.wait_for_service ('/gazebo/get_model_state')
-        self.get_model_srv = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
-        self.set_model_srv = rospy.ServiceProxy('/gazebo/set_model_state', SetModelState)
-        self.pub = rospy.Publisher('/'+model_name+'pose', PoseStamped, queue_size=10)
+        rospy.wait_for_service('/gazebo/get_model_state')
+        self.get_model_srv = rospy.ServiceProxy(
+            '/gazebo/get_model_state', GetModelState)
+        self.set_model_srv = rospy.ServiceProxy(
+            '/gazebo/set_model_state', SetModelState)
+        self.pub = rospy.Publisher(
+            '/'+model_name+'pose', PoseStamped, queue_size=10)
 
         self.model = GetModelStateRequest()
         self.model.model_name = model_name
@@ -31,17 +35,17 @@ class Agent(object):
         state_msg.pose = result.pose
         state_msg.twist = result.twist
         state_msg.pose.position.x = result.pose.position.x + 0.6*speed/freq
-        resp = self.set_model_srv( state_msg )
+        resp = self.set_model_srv(state_msg)
         pose = PoseStamped()
         pose.pose = state_msg.pose
         self.pub.publish(pose)
 
 
-
 if __name__ == '__main__':
     # Process arguments
     p = argparse.ArgumentParser(description='agent node')
-    p.add_argument('--model_name', nargs=1, type=str, required=True, help='the taregt model name on gazebo')
+    p.add_argument('--model_name', nargs=1, type=str,
+                   required=True, help='the taregt model name on gazebo')
     args = p.parse_args(rospy.myargv()[1:])
 
     try:

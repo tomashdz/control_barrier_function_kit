@@ -21,7 +21,7 @@ def cvxopt_solve_qp(P, q, G=None, h=None, A=None, b=None):
         return None
     return np.array(sol['x']).reshape((P.shape[1],))
 
-class Control_CBF(object):
+class Controller(object):
     """Controller class which take the connected system (ego, CBF_list, ROS) and combine it with map_cbf to generate controller as a qp
 
     Args:

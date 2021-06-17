@@ -142,7 +142,7 @@ if __name__ == '__main__':
     # we can create that, we may need to think about a way to assign agents to system
     print(agent_system.system_details())
 
-    unsafe_radius = 0.8
+    unsafe_radius = 1
     # Define h such that h(x)<=0 defines unsafe region
     def h(x, y, unsafe_radius): return (
         x[0] - y[0])**2 + (x[1] - y[1])**2 - (unsafe_radius + l)**2
@@ -169,12 +169,12 @@ if __name__ == '__main__':
 
     def goal_set_func(x): return (
         x[0]-goal_center[0])**2 + (x[1] - goal_center[1])**2 - r_goal
-    goal_func = Goal_Lyap(goal_set_func, ego_system)
+    goal_func = Goal_Lyap(goal_center, goal_set_func, ego_system)
 
     try:
         rospy.init_node('HSR')
         connected_HSR = Connected_system(ego_system, [cbf1, cbf2])
-        my_cbf_controller = Controller(connected_HSR, goal_func, corridor_map)
+        my_cbf_controller = Controller(connected_HSR, goal_func, corridor_map, 10)
         # [sec] we can change controll priod with this parameter.
         control_priod = 0.05
         time.sleep(1)

@@ -102,8 +102,9 @@ class Map_CBF(object):
 
 
 class Goal_Lyap(object):
-    def __init__(self, goal_set_func, ego):
+    def __init__(self, goal_center, goal_set_func, ego):
         self.set = goal_set_func
+        self.goal_center = goal_center
         GoalSym = goal_set_func(ego.states)
         self.Lyap = lambdify([ego.states, ego.inputs],
                              GoalSym.diff(ego.states).T * ego.dx)

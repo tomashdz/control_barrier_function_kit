@@ -135,19 +135,19 @@ class Controller(object):
             b[len(unsafe_list)+2*len(u_s)+j] = my_map.BF.RHS[j](x_r)
 
         H = np.zeros((num_qp_var,num_qp_var))
-        H[0,0] = 10
+        H[0,0] = 50
         H[1,1] = 1
 
         ff = np.zeros((num_qp_var,1))
         for j in range(len(unsafe_list)):
                 # ff[len(u_s)+j] = 3      # To reward not using the slack variables when not required
-                H[len(u_s)+j,len(u_s)+j] = 3      # To reward not using the slack variables when not required
+                H[len(u_s)+j,len(u_s)+j] = 50      # To reward not using the slack variables when not required
 
 
         for j in range(len(my_map.BF.h)):
                 #ff[len(u_s)+len(unsafe_list)+j] = 2
-                H[len(u_s)+len(unsafe_list)+j, len(u_s)+len(unsafe_list)+j] = 2
-        ff[0] = -20*u_ref[0]
+                H[len(u_s)+len(unsafe_list)+j, len(u_s)+len(unsafe_list)+j] = 4
+        ff[0] = -100*u_ref[0]
         ff[1] = -2*u_ref[1]
 
         try:

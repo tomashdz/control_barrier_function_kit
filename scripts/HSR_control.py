@@ -174,7 +174,7 @@ if __name__ == '__main__':
     try:
         rospy.init_node('HSR')
         connected_HSR = Connected_system(ego_system, [cbf1, cbf2])
-        my_cbf_controller = Controller(connected_HSR, goal_func, corridor_map, 10)
+        my_cbf_controller = Controller(connected_HSR, goal_func, corridor_map, 10 , "reference_control")
         # [sec] we can change controll priod with this parameter.
         control_priod = 0.05
         time.sleep(1)

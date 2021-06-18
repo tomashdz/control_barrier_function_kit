@@ -5,7 +5,6 @@ import rospy
 import matplotlib.pyplot as plt
 import cvxopt as cvxopt
 
-
 def cvxopt_solve_qp(P, q, G=None, h=None, A=None, b=None):
     # function to solve the quadratic program
     P = .5 * (P + P.T)  # make sure P is symmetric
@@ -141,7 +140,11 @@ class Controller(object):
         ff = np.zeros((num_qp_var,1))
         for j in range(len(unsafe_list)):
                 # ff[len(u_s)+j] = 3      # To reward not using the slack variables when not required
-                H[len(u_s)+j,len(u_s)+j] = 50      # To reward not using the slack variables when not required
+            if unsafe_list[j].BF.type is "exp":
+                H[len(u_s)+j, len(u_s)+j] = 20      # Use for exponential barrier functions
+            else:
+                H[len(u_s)+j, len(u_s)+j] = 50      # To reward not using the slack variables when not required
+
 
 
         for j in range(len(my_map.BF.h)):
@@ -240,8 +243,11 @@ class Controller(object):
         ff = np.zeros((num_qp_var, 1))
         for j in range(len(unsafe_list)):
             # ff[len(u_s)+j] = 3      # To reward not using the slack variables when not required
-            # To reward not using the slack variables when not required
-            H[len(u_s)+j, len(u_s)+j] = 50
+            if unsafe_list[j].BF.type is "exp":
+                H[len(u_s)+j, len(u_s)+j] = 20      # Use for exponential barrier functions
+            else:
+                H[len(u_s)+j, len(u_s)+j] = 50      # To reward not using the slack variables when not required
+
 
         for j in range(len(my_map.BF.h)):
             # ff[len(u_s)+len(unsafe_list)+j] = 2

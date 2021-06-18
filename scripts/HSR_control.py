@@ -23,6 +23,7 @@ from gazebo_msgs.srv import GetWorldProperties, GetModelState, GetModelStateRequ
 import tf
 
 
+
 def strList2SympyMatrix(str_list):
     sympy_symbols_lst = []
     for istr in str_list:
@@ -149,12 +150,22 @@ if __name__ == '__main__':
 
     def h1(x, y): return h(x, y, unsafe_radius)
     # B initially negative, so Bdot<= -aB
-    def B(x, y): return -h(x, y, unsafe_radius)
+    
 
-    cbf1 = CBF(h1, B, ego_system, agent_system)
+    exp_var = True
+
+    if exp_var == True:
+        def B(x, y): return exp(-h(x, y, unsafe_radius))-1
+        B_type = "exp"
+    else:
+        def B(x, y): return -h(x, y, unsafe_radius)
+        B_type = "lin"
+
+
+    cbf1 = CBF(h1, B, B_type, ego_system, agent_system)
     print(cbf1.details())
 
-    cbf2 = CBF(h1, B, ego_system, agent_system2)
+    cbf2 = CBF(h1, B, B_type, ego_system, agent_system2)
     print(cbf2.details())
 
     # Enviroment Bounds
@@ -174,7 +185,7 @@ if __name__ == '__main__':
     try:
         rospy.init_node('HSR')
         connected_HSR = Connected_system(ego_system, [cbf1, cbf2])
-        my_cbf_controller = Controller(connected_HSR, goal_func, corridor_map, 10 , "reference_control")
+        my_cbf_controller = Controller(connected_HSR, goal_func, corridor_map, 5 , "reference_control")
         # [sec] we can change controll priod with this parameter.
         control_priod = 0.05
         time.sleep(1)

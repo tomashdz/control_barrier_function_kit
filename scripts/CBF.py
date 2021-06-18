@@ -12,9 +12,10 @@ class BF(object):
         RHS (list): lambdafied expression #! Verify This
     """
 
-    def __init__(self, h=[], B=[]):
+    def __init__(self, h=[], B=[], B_type = []):
         self.h = h
         self.B = B
+        self.type = B_type
         self.LHS = []
         self.RHS = []
 
@@ -29,9 +30,9 @@ class CBF(object):
         agent (system): agent system
     """
 
-    def __init__(self, h, B, ego, agent):
+    def __init__(self, h, B, B_type, ego, agent):
         self.states = [ego.states, agent.states]
-        self.BF = BF(h, B)
+        self.BF = BF(h, B, B_type)
         self.compute_LHS_RHS(ego, agent)
         self.agent = agent
 

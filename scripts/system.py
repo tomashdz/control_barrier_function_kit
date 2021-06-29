@@ -1,3 +1,5 @@
+# 2021, Shakiba Yaghoubi, Bardh Hoxha, Tom Yamaguchi, Toyota Motor North America
+
 from sympy import symbols, Matrix, sin, cos, lambdify, exp, sqrt, log, diff
 from geometry_msgs.msg import PoseStamped
 from geometry_msgs.msg import Vector3

@@ -1,4 +1,7 @@
 #! /usr/bin/env python
+
+# 2021, Shakiba Yaghoubi, Bardh Hoxha, Tom Yamaguchi, Toyota Motor North America
+
 import argparse
 
 import rospy

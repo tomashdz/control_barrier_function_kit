@@ -1,4 +1,6 @@
-# from HSR_control import get_model_srv
+# 2021, Shakiba Yaghoubi, Bardh Hoxha, Tom Yamaguchi, Toyota Motor North America
+
+
 from gazebo_msgs.srv import GetWorldProperties, GetModelState, GetModelStateRequest
 import numpy as np
 import rospy

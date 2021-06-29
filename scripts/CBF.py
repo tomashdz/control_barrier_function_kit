@@ -1,3 +1,6 @@
+# 2021, Shakiba Yaghoubi, Bardh Hoxha, Tom Yamaguchi, Toyota Motor North America
+
+
 from sympy import symbols, Matrix, sin, cos, lambdify, exp, sqrt, log, diff
 import numpy as np
 
@@ -12,9 +15,10 @@ class BF(object):
         RHS (list): lambdafied expression #! Verify This
     """
 
-    def __init__(self, h=[], B=[], B_type = []):
+    def __init__(self, h=[], B=[], B_type = [], inputs = []):
         self.h = h
         self.B = B
+        self.inputs = inputs
         self.type = B_type
         self.LHS = []
         self.RHS = []
@@ -32,7 +36,7 @@ class CBF(object):
 
     def __init__(self, h, B, B_type, ego, agent):
         self.states = [ego.states, agent.states]
-        self.BF = BF(h, B, B_type)
+        self.BF = BF(h, B, B_type, ego.inputs)
         self.compute_LHS_RHS(ego, agent)
         self.agent = agent
 
@@ -51,6 +55,18 @@ class CBF(object):
         alpha = 1
         BFsym = self.BF.B(*self.states)
         BF_d = BFsym.diff(Matrix([ego.states, agent.states]))
+        negative_expr = (BF_d.T *  Matrix([ego.f+ ego.g * self.BF.inputs, agent.f]))[0]+alpha*BFsym
+        input_absent = 1
+        while input_absent:
+            for input in self.BF.inputs:
+                if input not in negative_expr.free_symbols:
+                    BF_d = BF_d.diff(Matrix([ego.states, agent.states]))
+                    negative_expr = (BF_d.T *  Matrix([ego.f+ ego.g * self.BF.inputs, agent.f]))[0]+alpha*BFsym
+                    input_absent = 1
+                    break
+                else:
+                    input_absent = 0
+
         self.BF.RHS = lambdify([ego.states, agent.states, agent.inputs],
                                - alpha * BFsym - (BF_d.T * Matrix([ego.f, agent.f]))[0])
         self.BF.LHS = lambdify([ego.states, agent.states],
@@ -77,7 +93,7 @@ class Map_CBF(object):
 
         self.states = ego.states
         self.BF = BF()
-
+        self.BF.inputs = ego.inputs
         alpha = 2
 
         for attr in ["x_min", "x_max", "y_min", "y_max"]:

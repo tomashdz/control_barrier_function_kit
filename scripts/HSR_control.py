@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+# 2021, Shakiba Yaghoubi, Bardh Hoxha, Tom Yamaguchi, Toyota Motor North America
 
 from sympy import symbols, Matrix, sin, cos, lambdify, exp, sqrt, log, diff
 from system import *
@@ -52,7 +52,26 @@ def appr_unicycle(states, inputs, l):
                [sin(states[2]), l*cos(states[2])], [0, 1]])
     return f, g
 
+def appr_unicycle(states, inputs, l):
+    """This function defines approximate unicycle model
 
+    Args:
+        states_str (list): name list of system states
+        inputs_str (list): name list of system inputs
+
+    Returns:
+        f, g (symbolic expressions): to describe model of the system as dx = f+g*input
+    """
+
+    if states.shape[0] != 3 or inputs.shape[0] != 2:
+        raise ValueError("appr_unicycle model has 3 states and 2 inputs")
+
+    f = Matrix([0, 0, 0])
+    g = Matrix([[cos(states[2]), -l*sin(states[2])],
+               [sin(states[2]), l*cos(states[2])], [0, 1]])
+    return f, g
+
+    
 def agent_break(states, inputs, radi, multi):
     """This function defines agent model with the assumption that the agent maintains its velocities
     in the x and y direction unless it is close to the ego when it slows down
@@ -107,6 +126,7 @@ if __name__ == '__main__':
 
     states_str = ['xr_0', 'xr_1', 'xr_2']
     inputs_str = ['ur_0', 'ur_1']
+
 
     states = strList2SympyMatrix(states_str)
     inputs = strList2SympyMatrix(inputs_str)

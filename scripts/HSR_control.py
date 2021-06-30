@@ -52,7 +52,7 @@ def appr_unicycle(states, inputs, l):
                [sin(states[2]), l*cos(states[2])], [0, 1]])
     return f, g
 
-def appr_unicycle(states, inputs, l):
+def acceleration_unicycle(states, inputs, l):
     """This function defines approximate unicycle model
 
     Args:
@@ -63,15 +63,17 @@ def appr_unicycle(states, inputs, l):
         f, g (symbolic expressions): to describe model of the system as dx = f+g*input
     """
 
-    if states.shape[0] != 3 or inputs.shape[0] != 2:
+    if states.shape[0] != 4 or inputs.shape[0] != 2:
         raise ValueError("appr_unicycle model has 3 states and 2 inputs")
 
-    f = Matrix([0, 0, 0])
-    g = Matrix([[cos(states[2]), -l*sin(states[2])],
-               [sin(states[2]), l*cos(states[2])], [0, 1]])
+    f = Matrix([states[2]*cos(states[3]), states[2]*sin(states[3]), 0, 0])
+    g = Matrix([[0, 0],
+               [0, 0],
+               [0, 1],
+               [1, 0]])
     return f, g
 
-    
+
 def agent_break(states, inputs, radi, multi):
     """This function defines agent model with the assumption that the agent maintains its velocities
     in the x and y direction unless it is close to the ego when it slows down

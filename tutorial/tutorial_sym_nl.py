@@ -9,7 +9,6 @@ from sympy.diffgeom import LieDerivative
 from sympy.diffgeom.rn import R2_r
 import math
 
-
 class CBF:
     def __init__(self, B, f, g, states, bad_sets, states_dot):
         self.B = B

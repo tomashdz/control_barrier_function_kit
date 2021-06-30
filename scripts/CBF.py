@@ -58,7 +58,8 @@ class CBF(object):
         negative_expr = (BF_d.T *  Matrix([ego.f+ ego.g * self.BF.inputs, agent.f]))[0]+alpha*BFsym
         input_absent = 1
         while input_absent:
-            for input in self.BF.inputs:
+            #TODO: Put a warning for mixed relative degrees, and work on a function that checks for the relative degree
+            for input in self.BF_d.inputs:
                 if input not in negative_expr.free_symbols:
                     BF_d = BF_d.diff(Matrix([ego.states, agent.states]))
                     negative_expr = (BF_d.T *  Matrix([ego.f+ ego.g * self.BF.inputs, agent.f]))[0]+alpha*BFsym

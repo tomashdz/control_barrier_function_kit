@@ -1,6 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import control as control
 import cvxopt as cvxopt
 from matplotlib.patches import Ellipse
 import numpy.random as rnd
@@ -123,8 +122,8 @@ def nimble_car_f(t, x, u, params):
     u_0 = nimble_car_c(x, params)
 
     # compute change in xy direction
-    dx0 = math.cos(x[2])
-    dx1 = math.sin(x[2]) 
+    dx0 = math.cos(x[2]) 
+    dx1 = math.sin(x[2])
     dx2 = u_0[0]
 
     return [dx0, dx1, dx2]
@@ -153,7 +152,7 @@ def is_inside_ellipse(x, x_e):
 goal_x = np.array([5, 5])
 
 # Elipse format (x,y,rad_x,rad_y)
-bad_sets = example(0)
+bad_sets = example(3)
 
 # Parameters for reference controller
 ctrl_param = [5]
@@ -174,14 +173,16 @@ myCBF = CBF(B, f, g, (xr0, xr1, xr2), bad_sets, states_dot)
 
 #? Simulation settings
 T_max = 10
-n_samples = 100
+n_samples = 1000
 T = np.linspace(0, T_max, n_samples)
+dt = T[1]-T[0]
+params={'goal_x': goal_x, 'bad_sets': bad_sets, 'ctrl_param': ctrl_param, 'myCBF': myCBF}
 
 # System definition using the control toolbox
-nimble_car_sys = control.NonlinearIOSystem(
-    nimble_car_f, None, inputs=None, outputs=None, dt=None,
-    states=('x0', 'x1', 'x2'), name='nimble_car',
-    params={'goal_x': goal_x, 'bad_sets': bad_sets, 'ctrl_param': ctrl_param, 'myCBF': myCBF})
+# nimble_car_sys = control.NonlinearIOSystem(
+#     nimble_car_f, None, inputs=None, outputs=None, dt=None,
+#     states=('x0', 'x1', 'x2'), name='nimble_car',
+#  params=params)
 
 #? Initial conditions
 #? min, max of x,y values for initial conditions
@@ -198,7 +199,7 @@ yy = [0.5]
 
 # Disable cvxopt optimiztaion output
 cvxopt.solvers.options['show_progress'] = False
-cvxopt.solvers.options['max_iter'] = 1000
+# cvxopt.solvers.options['max_iter'] = 1000
 
 # Plot
 fig, ax = plt.subplots()
@@ -241,11 +242,15 @@ for idxi, i in enumerate(xx):
             continue
 
         print(round(i, 2), '\t', round(k, 2), "\t... ", end="", flush=True)
-        x_0 = np.array([i, k])  
+        x_0 = np.array([i, k, 0])  
 
         # Compute output on the silly bug system for given initial conditions and timesteps T
-        t, y, x = control.input_output_response(sys=nimble_car_sys, T=T, U=0, X0=[
-                                                i, k, 0], return_x=True, method='BDF')
+        x = np.zeros((np.size(x_0), len(T)))
+        x[:,0] = x_0
+        for i in range(len(T)-1):
+            x[:,i+1] = x[:,i] + dt*  np.array( nimble_car_f(T[i], x[:,i], [], params))
+            
+
 
         # Plot initial conditions and path of system
         plt.plot(i, k, 'x-', markersize=5, color=[0, 0, 0, 1])

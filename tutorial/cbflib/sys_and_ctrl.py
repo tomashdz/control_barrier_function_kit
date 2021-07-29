@@ -2,7 +2,7 @@ import cvxopt as cvxopt
 import numpy as np
 import math
 
-def nimble_ant_c(t, x, u, params):
+def nimble_ant_c(x, params):
     """ Controller for nimble ant
 
     Args:
@@ -18,14 +18,14 @@ def nimble_ant_c(t, x, u, params):
         cvxopt.base.matrix: the control for the system
     """
     x_goal = params['x_goal']
-    ctrl_param_k = params['ctrl_param_k']
+    ctrl_param = params['ctrl_param']
     my_CBF = params['CBF']
 
     # Reference controller
     #! note that u, the input to the controller, is the state of the system
-    u_ref = ctrl_param_k * ((x_goal-u))
+    u_ref = ctrl_param * ((x_goal-x[0:2]))
 
-    if np.all((u == 0)):
+    if np.all((x == 0)):
         return u_ref
 
     ############################
@@ -41,7 +41,7 @@ def nimble_ant_c(t, x, u, params):
     # q matrix
     q = cvxopt.matrix(-1 * np.array(u_ref), (2, 1))
 
-    G, h = my_CBF.compute_G_h(u)
+    G, h = my_CBF.compute_G_h(x)
 
     G = cvxopt.matrix(G)
     h = cvxopt.matrix(h)
@@ -67,37 +67,21 @@ def nimble_ant_f(t, x, u, params):
     Returns:
         list: dx
     """
+
+    x_goal = params['x_goal']
+    if (x[0] - x_goal[0])**2 + (x[1] - x_goal[1])**2 <= 0.1**2:
+        return [0, 0]
+
+    # compute control given current position
+    u = nimble_ant_c(x, params)
+
     # dynamics
     dx0 = u[0]
     dx1 = u[1]
 
     return [dx0, dx1]
 
-def nimble_ant_with_agent_f(t, x, u, params):
-    """ Function for nimble ant with agent that moves to the left
-
-    Args:
-        t (float): [description]
-        x (numpy.ndarray): [description]
-        u (numpy.ndarray): [description]
-        params (dict): Dict keys:
-                        goal_x: the goal or target state
-                        bad_sets: list of elippses defining bad sets
-                        ctrl_param: parameters for the controller
-                        CBF: the CBF object 
-
-    Returns:
-        list: dx
-    """
-    # dynamics
-    dx0 = u[0]
-    dx1 = u[1]
-    dx2 = -0.5
-    dx3 = 0
-
-    return [dx0, dx1, dx2, dx3]
-
-def nimble_ant_with_agent_c(t, x, u, params):
+def nimble_ant_with_agent_c(x, params):
     """ Controller for nimble ant with agent
 
     Args:
@@ -114,14 +98,14 @@ def nimble_ant_with_agent_c(t, x, u, params):
     """
 
     x_goal = params['x_goal']
-    ctrl_param_k = params['ctrl_param_k']
+    ctrl_param = params['ctrl_param']
     my_CBF = params['CBF']
 
     # Reference controller
     #! note that u, the input to the controller, is the state of the system
-    u_ref = ctrl_param_k * ((x_goal-u[0:2]))
+    u_ref = ctrl_param * ((x_goal-x[0:2]))
 
-    if np.all((u == 0)):
+    if np.all((x == 0)):
         return u_ref
 
     ############################
@@ -141,7 +125,7 @@ def nimble_ant_with_agent_c(t, x, u, params):
     u_ref = np.append(u_ref,[0,0],axis=0)
     q = cvxopt.matrix(-1 * np.array(u_ref), (4, 1))
 
-    G, h = my_CBF.compute_G_h(u)
+    G, h = my_CBF.compute_G_h(x)
 
     G = cvxopt.matrix(G)
     h = cvxopt.matrix(h)
@@ -150,6 +134,38 @@ def nimble_ant_with_agent_c(t, x, u, params):
     sol = cvxopt.solvers.qp(P, q, G.T, h, None, None)
     x_sol = sol['x']
     return x_sol[0:2]
+
+def nimble_ant_with_agent_f(t, x, u, params):
+    """ Function for nimble ant with agent that moves to the left
+
+    Args:
+        t (float): [description]
+        x (numpy.ndarray): [description]
+        u (numpy.ndarray): [description]
+        params (dict): Dict keys:
+                        goal_x: the goal or target state
+                        bad_sets: list of elippses defining bad sets
+                        ctrl_param: parameters for the controller
+                        CBF: the CBF object 
+
+    Returns:
+        list: dx
+    """
+
+    # x_goal = params['x_goal']
+    # if (x[0] - x_goal[0])**2 + (x[1] - x_goal[1])**2 <= 0.1**2:
+    #     return [0, 0]
+
+    # compute control given current position
+    u = nimble_ant_with_agent_c(x, params)
+
+    # dynamics
+    dx0 = u[0]
+    dx1 = u[1]
+    dx2 = -0.5
+    dx3 = 0
+
+    return [dx0, dx1, dx2, dx3]
 
 def unicycle_f(t, x, u, params):
     # Function for a silly bug

@@ -7,6 +7,7 @@ from sympy import symbols, Matrix, sin, cos, lambdify, exp, sqrt, log, diff, Mul
 from sympy.diffgeom import LieDerivative
 from sympy.diffgeom.rn import R2_r
 import math
+import matplotlib.animation as animation
 
 class CBF:
     def __init__(self, B, f, g, states, bad_sets, states_dot):
@@ -17,9 +18,6 @@ class CBF:
         self.h = []
         self.expr_bs = []
         self.lamb_G = []
-
-        a1 = 7
-        a2 = 10
 
         expr = self.get_expr(B, f, g, states, states_dot)
 
@@ -45,7 +43,7 @@ class CBF:
         return self.G, self.h
 
     def get_expr(self, B, f, g, states, states_dot):
-        a = 10
+        a = 5
         B_dot_var = []
         for i in states:
             B_dot_var.append(diff(B, i))
@@ -106,7 +104,7 @@ def nimble_car_c(x, params):
         x_sol = sol['x']
     except:
         x_sol = [0]
-        print("bad")
+        print("QP fail. Trying again...")
     # print(x, ' G: ', G, ' h: ', h, ' x_sol: ', x_sol)
     return x_sol[0:1]
 
@@ -152,7 +150,7 @@ def is_inside_ellipse(x, x_e):
 goal_x = np.array([5, 5])
 
 # Elipse format (x,y,rad_x,rad_y)
-bad_sets = example(3)
+bad_sets = example(2)
 
 # Parameters for reference controller
 ctrl_param = [5]
@@ -173,29 +171,10 @@ myCBF = CBF(B, f, g, (xr0, xr1, xr2), bad_sets, states_dot)
 
 #? Simulation settings
 T_max = 10
-n_samples = 1000
+n_samples = 500
 T = np.linspace(0, T_max, n_samples)
 dt = T[1]-T[0]
 params={'goal_x': goal_x, 'bad_sets': bad_sets, 'ctrl_param': ctrl_param, 'myCBF': myCBF}
-
-# System definition using the control toolbox
-# nimble_car_sys = control.NonlinearIOSystem(
-#     nimble_car_f, None, inputs=None, outputs=None, dt=None,
-#     states=('x0', 'x1', 'x2'), name='nimble_car',
-#  params=params)
-
-#? Initial conditions
-#? min, max of x,y values for initial conditions
-min_x, min_y, max_x, max_y = -0.5, -0.5, 0.5, 0.5
-nx, ny = 10, 10              # number of initial conditions in each axis
-
-# Vectors of initial conditions in each axis
-xx = np.linspace(min_x, max_x, nx)
-yy = np.linspace(min_y, max_y, ny)
-
-#? Uncomment the following for specific intial conditions
-xx = [0.5]
-yy = [0.5]
 
 # Disable cvxopt optimiztaion output
 cvxopt.solvers.options['show_progress'] = False
@@ -203,8 +182,6 @@ cvxopt.solvers.options['show_progress'] = False
 
 # Plot
 fig, ax = plt.subplots()
-jet = plt.get_cmap('tab20b')
-colors = iter(jet(np.linspace(0, 1, len(xx)*len(yy))))
 
 # Loop through initial conditions
 print('Computing trajectories for initial conditions:')
@@ -227,36 +204,36 @@ ax.add_patch(goal_circle)
 plt.xlim(-2, 7)
 plt.ylim(-2, 7)
 
-for idxi, i in enumerate(xx):
-    for idxk, k in enumerate(yy):
-        # If initial condition is inside the bad set, skip it.
-        bool_val = 0
-        curr_bs = []
+# If initial condition is inside the bad set, skip it.
+bool_val = 0
+curr_bs = []
 
-        for idxj, j in enumerate(bad_sets):
-            curr_bs = bad_sets[idxj]
-            if is_inside_ellipse([i, k], bad_sets[idxj]):
-                print('Skip (Invalid):\t', i, k)
-                bool_val = 1
-        if bool_val == 1:
-            continue
+x_0 = np.array([0.5, 0.5, 0])
 
-        print(round(i, 2), '\t', round(k, 2), "\t... ", end="", flush=True)
-        x_0 = np.array([i, k, 0])  
-
-        # Compute output on the silly bug system for given initial conditions and timesteps T
-        x = np.zeros((np.size(x_0), len(T)))
-        x[:,0] = x_0
-        for i in range(len(T)-1):
-            x[:,i+1] = x[:,i] + dt*  np.array( nimble_car_f(T[i], x[:,i], [], params))
-            
+for idxj, j in enumerate(bad_sets):
+    curr_bs = bad_sets[idxj]
+    assert is_inside_ellipse([x_0[0], x_0[1]], bad_sets[idxj]) == 0, "Initial condition is inside ellipse"
 
 
-        # Plot initial conditions and path of system
-        plt.plot(i, k, 'x-', markersize=5, color=[0, 0, 0, 1])
-        plt.plot(x[0], x[1], 'o-', markersize=2,
-                 color=next(colors, [1, 1, 1, 1]))
-        plt.show()
-        print("Done")
+# Compute output on the silly bug system for given initial conditions and timesteps T
+x = np.zeros((np.size(x_0), len(T)))
+x[:,0] = x_0
+for i in range(len(T)-1):
+    x[:,i+1] = x[:,i] + dt*  np.array( nimble_car_f(T[i], x[:,i], [], params))
 
+line1, = ax.plot([], [], lw=2)
+goal_square = plt.Rectangle(
+        goal_x-np.array([.5, .5]), .2, .2, color='r', alpha=0.5)
 
+def init():
+    line1.set_data([], [])
+    return line1
+
+def animate(i):
+    line1.set_data((x[0][0:i], x[1][0:i]))
+    return line1, goal_square
+
+ani = animation.FuncAnimation(
+    fig, animate,init_func=init, interval=5, frames=n_samples, repeat=False)
+
+plt.show()

@@ -3,11 +3,12 @@ import matplotlib.pyplot as plt
 import cvxopt as cvxopt
 from matplotlib.patches import Ellipse
 import numpy.random as rnd
-from sympy import symbols, Matrix, sin, cos, lambdify, exp, sqrt, log, diff, Mul, srepr
+from sympy import symbols, Matrix, sin, cos, lambdify, exp, sqrt, log, diff, Mul, srepr, simplify
 from sympy.diffgeom import LieDerivative
 from sympy.diffgeom.rn import R2_r
 import math
 import matplotlib.animation as animation
+
 
 class CBF:
     def __init__(self, B, f, g, states, bad_sets, states_dot):
@@ -27,7 +28,7 @@ class CBF:
 #!  h+B is incorrect when second order system,
         self.lamb_h = lambdify(
             # [(cx, cy, rad_x, rad_y, xr0, xr1, xr2)], (h+B), "math")
-            [(cx, cy, rad_x, rad_y, xr0, xr1, xr2)], h , "math")
+            [(cx, cy, rad_x, rad_y, xr0, xr1, xr2)], h, "math")
 
     def compute_G_h(self, x):
         self.G = []
@@ -43,7 +44,7 @@ class CBF:
         return self.G, self.h
 
     def get_expr(self, B, f, g, states, states_dot):
-        a = 5
+        a = 10
         B_dot_var = []
         for i in states:
             B_dot_var.append(diff(B, i))
@@ -51,7 +52,7 @@ class CBF:
         B_dot_f = B_dot.T * states_dot
         phi = B_dot_f[0] + a * B
         self.phi.append(phi)
-        if xr2_dot in phi.free_symbols:  #! This needs to be revised
+        if xr2_dot in phi.free_symbols:  # ! This needs to be revised
             return phi
         else:
             return self.get_expr(phi, f, g, states, states_dot)
@@ -61,7 +62,8 @@ class CBF:
         h = 0
         for arg in expr.args:
             if xr2_dot in arg.free_symbols:
-                G = - arg.subs(xr2_dot, 1)                   #### Shakiba: This is hard coded needs to change for a different model 
+                # Shakiba: This is hard coded needs to change for a different model
+                G = - arg.subs(xr2_dot, 1)
             else:
                 h = h + arg
         return G, h
@@ -104,7 +106,7 @@ def nimble_car_c(x, params):
         x_sol = sol['x']
     except:
         x_sol = [0]
-        print("QP fail. Trying again...")
+        print("QP iteration fail. Trying again...")
     # print(x, ' G: ', G, ' h: ', h, ' x_sol: ', x_sol)
     return x_sol[0:1]
 
@@ -120,7 +122,7 @@ def nimble_car_f(t, x, u, params):
     u_0 = nimble_car_c(x, params)
 
     # compute change in xy direction
-    dx0 = math.cos(x[2]) 
+    dx0 = math.cos(x[2])
     dx1 = math.sin(x[2])
     dx2 = u_0[0]
 
@@ -145,6 +147,7 @@ def is_inside_ellipse(x, x_e):
         return 1
     else:
         return 0
+
 
 # Robot Goal
 goal_x = np.array([5, 5])
@@ -174,7 +177,8 @@ T_max = 10
 n_samples = 500
 T = np.linspace(0, T_max, n_samples)
 dt = T[1]-T[0]
-params={'goal_x': goal_x, 'bad_sets': bad_sets, 'ctrl_param': ctrl_param, 'myCBF': myCBF}
+params = {'goal_x': goal_x, 'bad_sets': bad_sets,
+          'ctrl_param': ctrl_param, 'myCBF': myCBF}
 
 # Disable cvxopt optimiztaion output
 cvxopt.solvers.options['show_progress'] = False
@@ -198,7 +202,7 @@ for idxi, _ in enumerate(bad_sets):
 # goal_square = plt.Rectangle(goal_x-np.array([.1, .1]), .2, .2, color='g')
 # ax.add_patch(goal_square)
 
-goal_circle =  Ellipse((goal_x[0], goal_x[1]), 2*0.1, 2*0.1, color='g')
+goal_circle = Ellipse((goal_x[0], goal_x[1]), 2*0.1, 2*0.1, color='g')
 ax.add_patch(goal_circle)
 
 plt.xlim(-2, 7)
@@ -212,28 +216,52 @@ x_0 = np.array([0.5, 0.5, 0])
 
 for idxj, j in enumerate(bad_sets):
     curr_bs = bad_sets[idxj]
-    assert is_inside_ellipse([x_0[0], x_0[1]], bad_sets[idxj]) == 0, "Initial condition is inside ellipse"
+    assert is_inside_ellipse(
+        [x_0[0], x_0[1]], bad_sets[idxj]) == 0, "Initial condition is inside ellipse"
 
 
 # Compute output on the silly bug system for given initial conditions and timesteps T
 x = np.zeros((np.size(x_0), len(T)))
-x[:,0] = x_0
+x[:, 0] = x_0
 for i in range(len(T)-1):
-    x[:,i+1] = x[:,i] + dt*  np.array( nimble_car_f(T[i], x[:,i], [], params))
+    x[:, i+1] = x[:, i] + dt * \
+        np.array(nimble_car_f(T[i], x[:, i], [], params))
 
 line1, = ax.plot([], [], lw=2)
 goal_square = plt.Rectangle(
-        goal_x-np.array([.5, .5]), .2, .2, color='r', alpha=0.5)
+    goal_x-np.array([.5, .5]), .2, .2, color='r', alpha=0.5)
+
 
 def init():
     line1.set_data([], [])
     return line1
 
+
 def animate(i):
     line1.set_data((x[0][0:i], x[1][0:i]))
     return line1, goal_square
 
+
 ani = animation.FuncAnimation(
-    fig, animate,init_func=init, interval=5, frames=n_samples, repeat=False)
+    fig, animate, init_func=init, interval=5, frames=n_samples, repeat=False)
 
 plt.show()
+
+# lgLfB(x) =  + ((-2*cy + 2*xr1)*cos(xr2)/rad_y**2 - (-2*cx + 2*xr0)*sin(xr2)/rad_x**2)*xr2_dot
+# Lf^2B(x) =  + 2*cos(xr2)/rad_x**2)*cos(xr2) + 2*sin(xr2)/rad_y**2)*sin(xr2)
+
+# \alpha_1 * \dot{b(x)} = 20*(-2*cx + 2*xr0)*cos(xr2)/rad_x**2 + 20*(-2*cy + 2*xr1)*sin(xr2)/rad_y**2 
+# \alpha_1*\alpha_2B(x) = + 100*(-cx + xr0)**2/rad_x**2 + 100*(-cy + xr1)**2/rad_y**2 - 100
+
+
+
+#  + 10*(-2*cx + 2*xr0)*cos(xr2)/rad_x**2 
+#  + 10*(-2*cy + 2*xr1)*sin(xr2)/rad_y**2 
+#  + (10*(-2*cx + 2*xr0)/rad_x**2)*cos(xr2) 
+#  + (10*(-2*cy + 2*xr1)/rad_y**2)*sin(xr2)
+
+
+
+# 2*(-50*rad_x**2*rad_y**2 + rad_x**2*(10*(-cy + xr1)*sin(xr2)
+
+#2*(-50*rad_x**2*rad_y**2 + rad_x**2*(10*(-cy + xr1)*sin(xr2) + 50*(cy - xr1)**2 - (10*cy - 10*xr1 - sin(xr2))*sin(xr2)) + rad_y**2*(10*(-cx + xr0)*cos(xr2) + 50*(cx - xr0)**2 - (10*cx - 10*xr0 - cos(xr2))*cos(xr2)) - xr2_dot*(rad_x**2*(cy - xr1)*cos(xr2) - rad_y**2*(cx - xr0)*sin(xr2)))/(rad_x**2*rad_y**2)

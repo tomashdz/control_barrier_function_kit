@@ -154,8 +154,8 @@ yy = [0.5]
 # x_0 = np.vstack([x1, x2])
 
 # exmample 2
-x1 = np.array([1, 1, math.pi/4], dtype=np.float32)
-x2 = np.array([1, 4, 3*math.pi/4])
+x1 = np.array([2, 1, math.pi/4], dtype=np.float32)
+x2 = np.array([2, 4, 3*math.pi/4])
 x3 = np.array([4, 1, 7*math.pi/4])
 x4 = np.array([4, 4, math.pi/4])
 x_0 = np.vstack([x1, x2, x3, x4])

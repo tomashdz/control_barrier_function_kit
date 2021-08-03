@@ -10,7 +10,7 @@ from sympy import symbols, Matrix, sin, cos, lambdify, exp, sqrt, log, diff, Mul
 # Robot Goal
 x_goal = np.array([5, 5])
 
-# Undesired aread in ellipse format (x,y,rad_x,rad_y) - Use example(0) through example(3)
+# Undesired areas in ellipse format (x,y,rad_x,rad_y) - Use example(0) through example(3)
 bad_sets = cbf_utils.example(1)
 
 # Parameters for reference controller
@@ -37,15 +37,11 @@ dt = T[1]-T[0]
 params = {'x_goal': x_goal, 'bad_sets': bad_sets,
           'ctrl_param': ctrl_param, 'CBF': my_CBF}
 
-# intial condition
-x_0 = np.array([0.5, 1.5])
-
 # Disable cvxopt optimiztaion output
 cvxopt.solvers.options['show_progress'] = False
-cvxopt.solvers.options['max_iter'] = 1000
 
-# Init Plot
-fig, ax = plt.subplots()
+# intial condition
+x_0 = np.array([0.5, 1.5])
 
 # Simulate system
 print('\nComputing trajectories for the initial condition:')
@@ -68,6 +64,9 @@ for i in range(len(T)-1):
         np.array(sys_and_ctrl.nimble_ant_f(T[i], x[:, i], [], params))
 
 print("\n*Simulation Done. See plot for animation...")
+
+# Init Plot
+fig, ax = plt.subplots()
 
 # Animate
 ax = cbf_utils.plot_cbf_elements(ax, bad_sets, x_goal)

@@ -285,3 +285,61 @@ def unicycle_agent_c(x, params):
         print("bad")
     # print(x, ' G: ', G, ' h: ', h, ' x_sol: ', x_sol)
     return x_sol[0:1]
+
+# def unicycle_c(x, params):
+#     # Controller for nimble car
+#     goal_x = params['goal_x']
+#     bad_sets = params['bad_sets']
+#     ctrl_param = params['ctrl_param']
+#     myCBF = params['myCBF']
+
+#     # Reference controller
+#     theta_ref = math.atan((goal_x[1]-x[1])/(goal_x[0]-x[0]))
+#     uref_0 = ctrl_param[0] * (theta_ref - x[2])
+
+#     ############################
+#     # cvxopt quadratic program
+#     # minimize  0.5 x'Px + q'x
+#     # s.t       Gx<=h
+#     ############################
+
+#     # P matrix
+#     P = cvxopt.matrix(np.eye(1))
+#     # P = .5 * (P + P.T)  # symmetric
+
+#     # q matrix
+#     q = cvxopt.matrix(np.array([-1*uref_0]), (1, 1))
+
+#     G, h = myCBF.compute_G_h(x)
+
+#     G = cvxopt.matrix(G)
+#     h = cvxopt.matrix(h)
+
+#     # Run optimizer and return solution
+#     # sol = cvxopt.solvers.qp(P, q, G.T, h, None, None)
+#     try:
+#         sol = cvxopt.solvers.qp(P, q, G.T, h, None, None)
+#         x_sol = sol['x']
+#     except:
+#         x_sol = [0]
+#         print("QP iteration fail. Trying again...")
+#     # print(x, ' G: ', G, ' h: ', h, ' x_sol: ', x_sol)
+#     return x_sol[0:1]
+
+
+# def unicycle_f(t, x, u, params):
+#     # Function for a silly bug
+#     # if goal reached, do nothing
+#     goal_x = params['goal_x']
+#     if (x[0] - goal_x[0])**2 + (x[1] - goal_x[1])**2 <= 0.1**2:
+#         return [0, 0, 0]
+
+#     # compute control given current position
+#     u_0 = unicycle_c(x, params)
+
+#     # compute change in xy direction
+#     dx0 = math.cos(x[2])
+#     dx1 = math.sin(x[2])
+#     dx2 = u_0[0]
+
+#     return [dx0, dx1, dx2]

@@ -142,5 +142,4 @@ cython_debug/
 .vscode/settings.json
 .vscode/launch.json
 tutorial/cbflib/__pycache__/cbf.cpython-39.pyc
-tutorial/cbflib/__pycache__/cbf.cpython-39.pyc
-tutorial/cbflib/__pycache__/cbf.cpython-39.pyc
+tutorial/cbflib/__pycache__/sys_and_ctrl.cpython-39.pyc

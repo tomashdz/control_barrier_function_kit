@@ -40,9 +40,11 @@ class CBF:
             G, h = self.decompose_G_h(expr, g, states_dot)
 
             self.lamb_G.append(
-                lambdify((cx, cy, rad_x, rad_y, xr0, xr1, xr2), G, "math"))
+                # lambdify((cx, cy, rad_x, rad_y, xr0, xr1, xr2), G, "math"))
+                lambdify([symbs], G, "math"))
             self.lamb_h = lambdify(
-                (cx, cy, rad_x, rad_y, xr0, xr1, xr2), h, "math")
+                # (cx, cy, rad_x, rad_y, xr0, xr1, xr2), h, "math")
+                [symbs], h, "math")
         else:
             raise ValueError("degree > 2 not implemented yet")
 
@@ -93,7 +95,7 @@ class CBF:
         B_dot_f = B_dot.T * states_dot
         phi = B_dot_f[0] + a * B
         self.phi.append(phi)
-        if xr2_dot in phi.free_symbols:  # ! This needs to be revised
+        if states_dot[2] in phi.free_symbols:  # ! This needs to be revised
             return phi
         else:
             return self.get_expr(phi, f, g, states, states_dot)
@@ -102,9 +104,9 @@ class CBF:
         G = []
         h = 0
         for arg in expr.args:
-            if xr2_dot in arg.free_symbols:
+            if states_dot[2] in arg.free_symbols:
                 # Shakiba: This is hard coded needs to change for a different model
-                G = - arg.subs(xr2_dot, 1)
+                G = - arg.subs(states_dot[2], 1)
             else:
                 h = h + arg
         return G, h

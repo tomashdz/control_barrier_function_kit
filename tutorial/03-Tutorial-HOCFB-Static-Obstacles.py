@@ -10,7 +10,7 @@ from cbflib import cbf, cbf_utils, sys_and_ctrl
 x_goal = np.array([5, 5])
 
 # Undesired areas in ellipse format (x,y,rad_x,rad_y) - Use example(0) through example(3)
-bad_sets = cbf_utils.example(3)
+bad_sets = cbf_utils.example(0)
 
 # Parameters for reference controller
 ctrl_param = [10]
@@ -68,8 +68,8 @@ for i in range(len(T)-1):
 fig, ax = plt.subplots()
 ax = cbf_utils.plot_cbf_elements(ax, bad_sets, x_goal)
 
-plt.xlim(-2, 7)
-plt.ylim(-2, 7)
+plt.xlim(-1, 6)
+plt.ylim(-1, 6)
 
 line1, = ax.plot([], [], lw=2)
 goal_square = plt.Rectangle(
@@ -90,20 +90,3 @@ ani = animation.FuncAnimation(
 plt.show()
 
 print("\n*Animation Complete. Exiting...\n")
-
-# lgLfB(x) =  + ((-2*cy + 2*xr1)*cos(xr2)/rad_y**2 - (-2*cx + 2*xr0)*sin(xr2)/rad_x**2)*xr2_dot
-# Lf^2B(x) =  + 2*cos(xr2)/rad_x**2)*cos(xr2) + 2*sin(xr2)/rad_y**2)*sin(xr2)
-
-# \alpha_1 * \dot{b(x)} = 20*(-2*cx + 2*xr0)*cos(xr2)/rad_x**2 + 20*(-2*cy + 2*xr1)*sin(xr2)/rad_y**2
-# \alpha_1*\alpha_2B(x) = + 100*(-cx + xr0)**2/rad_x**2 + 100*(-cy + xr1)**2/rad_y**2 - 100
-
-
-#  + 10*(-2*cx + 2*xr0)*cos(xr2)/rad_x**2
-#  + 10*(-2*cy + 2*xr1)*sin(xr2)/rad_y**2
-#  + (10*(-2*cx + 2*xr0)/rad_x**2)*cos(xr2)
-#  + (10*(-2*cy + 2*xr1)/rad_y**2)*sin(xr2)
-
-
-# 2*(-50*rad_x**2*rad_y**2 + rad_x**2*(10*(-cy + xr1)*sin(xr2)
-
-#2*(-50*rad_x**2*rad_y**2 + rad_x**2*(10*(-cy + xr1)*sin(xr2) + 50*(cy - xr1)**2 - (10*cy - 10*xr1 - sin(xr2))*sin(xr2)) + rad_y**2*(10*(-cx + xr0)*cos(xr2) + 50*(cx - xr0)**2 - (10*cx - 10*xr0 - cos(xr2))*cos(xr2)) - xr2_dot*(rad_x**2*(cy - xr1)*cos(xr2) - rad_y**2*(cx - xr0)*sin(xr2)))/(rad_x**2*rad_y**2)

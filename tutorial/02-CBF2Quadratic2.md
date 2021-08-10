@@ -52,7 +52,7 @@ $$
     \mathbf{x} = \dot{x} = \begin{bmatrix}u_0 \\ u_1 \\ u_2 \\ u_3\end{bmatrix} = \begin{bmatrix}u_0 \\ u_1 \\ -1 \\ 0\end{bmatrix}
 \end{aligned}
 $$
-is the decision variable, where,
+where $u_2$, $u_3}$ are uncontrolable and predefined as the obstacle goes to straight forward.
 $$
 \begin{aligned}
 P = I_4 = \begin{bmatrix}1 & 0 & 0 & 0 \\ 0 & 1 & 0 & 0 \\ 0 & 0 & 1 & 0 \\ 0 & 0 & 0 & 1 \end{bmatrix} \tag{13}

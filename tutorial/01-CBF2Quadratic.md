@@ -34,7 +34,7 @@ $$
 Finally we can transform (12) as,
 $$
 \begin{aligned}
-\min_{u} \quad & 2(\frac{1}{2} \dot{x}^T I_2 \dot{x} + \begin{bmatrix}-u_{ref0} \\ -u_{ref1}\end{bmatrix}^T \dot{x})\\
+\min_{u} \quad & \frac{1}{2} \dot{x}^T I_2 \dot{x} + \begin{bmatrix}-u_{ref0} \\ -u_{ref1}\end{bmatrix}^T \dot{x}\\
 \textrm{s.t.} \quad & \begin{bmatrix} \frac{-2}{a^2}(x_0 - z_0) \\ \frac{-2}{b^2}(x_1 - z_1)\end{bmatrix} \dot{x} \le (\frac{(x_0-z_0)^2}{a^2} + \frac{(x_1-z_1)^2}{b^2} - 1) \\
 ...
 \end{aligned}

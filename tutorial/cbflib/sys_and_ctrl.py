@@ -1,6 +1,7 @@
 import cvxopt as cvxopt
 import numpy as np
 import math
+from sympy import symbols
 
 def nimble_ant_c(x, params):
     """ Controller for nimble ant
@@ -343,3 +344,92 @@ def unicycle_agent_c(x, params):
 #     dx2 = u_0[0]
 
 #     return [dx0, dx1, dx2]
+
+
+
+################ TV Stuff
+
+def nimble_ant_tv_c(x, t, params):
+    """ Controller for nimble ant
+
+    Args:
+        t (float): [description]
+        x (numpy.ndarray): [description]
+        u (numpy.ndarray): the input to the controller is the state of the system x
+        params (dict): Dict keys:
+                        goal_x: the goal or target state
+                        bad_sets: list of elippses defining bad sets
+                        ctrl_param: parameters for the controller
+                        CBF: the CBF object
+    Returns:
+        cvxopt.base.matrix: the control for the system
+    """
+    x_goal = params['x_goal']
+    ctrl_param = params['ctrl_param']
+    my_CBF = params['CBF']
+
+    # Reference controller
+    #! note that u, the input to the controller, is the state of the system
+
+    ############################
+    # cvxopt quadratic program
+    # minimize  0.5 x'Px + q'x
+    # s.t       Gx<=h
+    ############################
+
+    # P matrix
+    P = cvxopt.matrix(np.eye(2))
+    # P = .5 * (P + P.T)  # symmetric
+
+    # q matrix
+    q = cvxopt.matrix(np.array([0.0, 0]), (2, 1))
+
+    # F_[5,15](||x-x_g||)<=5)
+    # h(x) = 5 - ||x-x_g||
+    # b(x,t) = y(t) -  ||x-x_g||
+    # y(t) = -5/15*t + 10
+    # t = symbols('t')
+    # my_CBF.B = my_CBF.B_TV.subs('t', time)
+
+    # G, h = my_CBF.compute_G_h(x)
+    G, h = my_CBF.compute_G_h(x,t)
+
+    G = cvxopt.matrix(G)
+    h = cvxopt.matrix(h)
+    print('G: ', G, ' h; ',h)
+    # Run optimizer and return solution
+    sol = cvxopt.solvers.qp(P, q, G.T, h, None, None)
+    x_sol = sol['x']
+    print('sol: ',x_sol)
+    
+    return x_sol[0:2]
+
+def nimble_ant_tv_f(t, x, u, params):
+    """ Function for the nimble_ant system
+
+    Args:
+        t (float): [description]
+        x (numpy.ndarray): [description]
+        u (numpy.ndarray): [description]
+        params (dict): Dict keys:
+                        goal_x: the goal or target state
+                        bad_sets: list of elippses defining bad sets
+                        ctrl_param: parameters for the controller
+                        CBF: the CBF object 
+
+    Returns:
+        list: dx
+    """
+
+    x_goal = params['x_goal']
+    if (x[0] - x_goal[0])**2 + (x[1] - x_goal[1])**2 <= 0.1**2:
+        return [0, 0]
+
+    # compute control given current position
+    u = nimble_ant_tv_c(x, t, params)
+
+    # dynamics
+    dx0 = u[0]
+    dx1 = u[1]
+
+    return [dx0, dx1]

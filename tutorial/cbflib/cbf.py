@@ -1,9 +1,9 @@
 import numpy as np
-from sympy import symbols, Matrix, sin, cos, lambdify, exp, sqrt, log, diff, Mul, srepr
+from sympy import symbols, Matrix, sin, cos, lambdify, exp, sqrt, log, diff, Mul, srepr, Symbol
 
 
 class CBF:
-    def __init__(self, B, f, g, states, bad_sets, symbs, degree, states_dot=[]):
+    def __init__(self, B, f, g, states, symbs, degree, bad_sets=[], states_dot=[], time_varying=0):
         """ This initializes the CBF and computes functions for the G and h matrices for convex optimization later on.
         Args:
             B (sympy expression):   The expression for the bad set representation
@@ -15,6 +15,7 @@ class CBF:
                                     minor axes of the ellipse
         """
         self.B = B
+        self.B_TV = B
         self.phi = []
         self.f = f
         self.g = g
@@ -27,14 +28,24 @@ class CBF:
         self.lamb_G = []
         # function for computation of symbolic expression for G matrix
         self.degree = degree
+        self.time_varying = time_varying
 
         if self.degree == 1:
-            for i in self.states:
-                temp_expr = diff(B, i)
-                self.expr_bs.append(temp_expr)
-                self.lamb_G.append(
-                    lambdify([symbs], temp_expr, "math"))
+            if self.time_varying == 1:
+                t = Symbol('t')
+                self.lamb_h = lambdify([symbs+(t,)], B, "math")
+                for i in self.states:
+                    temp_expr = diff(B, i)
+                    self.expr_bs.append(temp_expr)
+                    self.lamb_G.append(
+                        lambdify([symbs], temp_expr, "math"))
+            else:
                 self.lamb_h = lambdify([symbs], B, "math")
+                for i in self.states:
+                    temp_expr = diff(B, i)
+                    self.expr_bs.append(temp_expr)
+                    self.lamb_G.append(
+                        lambdify([symbs], temp_expr, "math"))
         elif self.degree == 2:
             expr = self.get_expr(B, f, g, states, states_dot)
             G, h = self.decompose_G_h(expr, g, states_dot)
@@ -48,7 +59,7 @@ class CBF:
         else:
             raise ValueError("degree > 2 not implemented yet")
 
-    def compute_G_h(self, x):
+    def compute_G_h(self, x, t=0):
         """ The method computes the G and h matrices for convex optimization given current state
 
         Args:
@@ -62,14 +73,26 @@ class CBF:
         self.h = []
 
         if self.degree == 1:
-            for idxi, _ in enumerate(self.bad_sets):
-                curr_bs = self.bad_sets[idxi]
-                tmp_g = []
-                self.G.append([])
+            if self.time_varying == 1:
                 for lamb in self.lamb_G:
-                    tmp_g = lamb(tuple(np.hstack((x, curr_bs))))
-                    self.G[idxi].append(-1*tmp_g)
-                self.h.append(self.lamb_h(tuple(np.hstack((x, curr_bs)))))
+                    tmp_g = lamb(tuple(x))
+                    self.G.append(-1*tmp_g)
+                self.h.append((10*self.lamb_h(tuple(x)+(t,)))) # 
+            else:
+                if self.bad_sets == []:
+                    for lamb in self.lamb_G:
+                        tmp_g = lamb(tuple(x))
+                        self.G.append(-1*tmp_g)
+                    self.h.append(self.lamb_h(x))
+                else:
+                    for idxi, _ in enumerate(self.bad_sets):
+                        curr_bs = self.bad_sets[idxi]
+                        tmp_g = []
+                        self.G.append([])
+                        for lamb in self.lamb_G:
+                            tmp_g = lamb(tuple(np.hstack((x, curr_bs))))
+                            self.G[idxi].append(-1*tmp_g)
+                        self.h.append(self.lamb_h(tuple(np.hstack((x, curr_bs)))))
         elif self.degree == 2:
             # for each bad set, given current state, compute the G and h matrices
             for idxi, _ in enumerate(self.bad_sets):

@@ -48,7 +48,7 @@ def plot_cbf_elements(ax, bad_sets, goal_x):
         ax.add_patch(ell)
 
     goal_square = plt.Rectangle(
-        goal_x-np.array([1, 1]), 1, 1, color='g', alpha=0.5)
+        goal_x-np.array([.1, .1]), .2, .2, color='g', alpha=0.5)
 
     ax.add_patch(goal_square)
 

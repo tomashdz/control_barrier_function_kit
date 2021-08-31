@@ -13973,125 +13973,80 @@ a.anchor-link {
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
 <h1 id="CBF-Tutorial---Part-1:-Static-Obstacles">CBF Tutorial - Part 1: Static Obstacles<a class="anchor-link" href="#CBF-Tutorial---Part-1:-Static-Obstacles">&#182;</a></h1><p>Authors: Bardh, Tom and Shakiba</p>
 <h2 id="In-this-notebook,-we-present-a-short-introduction-on-Control-Barrier-Functions">In this notebook, we present a short introduction on Control Barrier Functions<a class="anchor-link" href="#In-this-notebook,-we-present-a-short-introduction-on-Control-Barrier-Functions">&#182;</a></h2><p>First, let's start by defining a two-dimensional system, called <strong>nimble_ant</strong>, with the following dynamics:
-$
-\begin{align*}
+$$
   \dot{x} = u = \begin{bmatrix}u_0 \\ u_1\end{bmatrix} \tag{1}\\
-\end{align*}
-$
-Given an initial position $x^{init}$, our goal is to control this system to a goal location $x^{goal}$.
-$
-\begin{align*}
+$$</p>
+<p>Given an initial position $x^{init}$, our goal is to control this system to a goal location $x^{goal}$.
+$$
 x^{init} = \begin{bmatrix} x^{init}_0 \\  x^{init}_1 \end{bmatrix} \qquad   x^{goal} = \begin{bmatrix} x^{goal}_0 \\  x^{goal}_1 \end{bmatrix} \tag{2}\\
-\end{align*}
-$
+$$
 However, the system should avoid certain areas in the workspace (more on this later).</p>
 <p>One way to solve this problem is to pose it as an optimization problem. Specifically, we would like to solve the following problem:
-$
-\begin{align*}
-\min_{u} \quad &amp; ||u_{ref} - u||\\
-\textrm{s.t.} \quad &amp; \text{CBF constraints to be added later} \tag{3}\\
-\end{align*}
-$
+$$
+\min_{u} \quad  ||u_{ref} - u||\\
+\textrm{s.t.} \quad  \text{CBF constraints to be added later} \tag{3}\\
+$$
 So, we will try to minimize the distance between the decission variable $u$ and reference controller $u_{ref}$, while satisfying some constraints. For now, let us disregard the constraint and focus on designing a reference controller.</p>
 <h2 id="Reference-controller">Reference controller<a class="anchor-link" href="#Reference-controller">&#182;</a></h2><p>We will define a very simple reference controller as follows
-$
-\begin{align*}
+$$
 u_{ref} = k \cdot (x^{goal} - x) \tag{4}
-\end{align*}
-$
+$$
 This is a two dimensional vector that takes the difference between the current system state (or location) and the goal location and multiply it with a gain factor $k$. This <strong>simple</strong> reference controller will take us from an initial location to the goal location. We can say it is a typical <a href="https://en.wikipedia.org/wiki/Proportional_control">proportional controller</a>. Next, we need to make sure that the system does not enter undesired states.</p>
 <h2 id="Control-Barrier-Function-(CBF)-as-Constraints">Control Barrier Function (CBF) as Constraints<a class="anchor-link" href="#Control-Barrier-Function-(CBF)-as-Constraints">&#182;</a></h2><p>We assume that the undesired regions in the workspace can be defined with one or more <a href="https://en.wikipedia.org/wiki/Ellipse">ellipses</a>. In two dimensions, the region inside an ellypsis can be using the standard form with the following inequality
-$
-\begin{align*}
+$$
 \frac{z^2_0}{a^2} + \frac{z^2_1}{b^2}\leq 1 \tag{5}
-\end{align*}
-$
+$$
 where $z_0,z_1$ define the origin and $a,b$ define the major, minor axes of the ellipse, respectively.</p>
 <p>In our case, we would like to check whether our system is in the undesired region and therefore we modify the afforementined requirement
-$
-\begin{align*}
+$$
 B(x) = \frac{(x_0-z_0)^2}{a^2} + \frac{(x_1-z_1)^2}{b^2} - 1 \tag{6}
-\end{align*}
-$</p>
+$$</p>
 <p>CBFs are defined by the condition:
-$
-\begin{align}
+$$
 \dot{B}(x) \ge -\alpha\cdot(B(x)) \tag{7}
-\end{align}
-$</p>
-<p>Where $\dot{B}(x) = \frac{\partial{B}}{\partial{t}}$ and $\alpha$ is a positive real value. In this example we set $\alpha=1$. $\dot{B}(x)$ indicates how the distance of the system to the barrier changes with respect to time.</p>
-<p>So, in our formulation  $B(x) &lt; 0$ indicates whether the current state is in a unsafe set.
-For a more detailed explanation of Eq. (7) See Proposition 2 in "<a href="http://web.mit.edu/~jadbabai/www/papers/hscc04_2.pdf">Safety Verification of Hybrid Systems Using Barrier Certificates</a>".
-In Eq. (7), $B(x)$ indicates the distance between the state of the system and the unsafe set.
-We need to ensure that the rate of change is always bigger than the distance to the bad set by a factor $\alpha$.
-In our case $\alpha$ is one but in other problems it can be different.
-If this inequality holds, then the system is forward invariant. It will not enter the bad set.
-Next, we need to find a way to introduce our control input into this equation so that we can ensure that this inequality remains true. We do so through by subsituting $\dot{B}(x)$ with an equivalent expression in terms of the control input.</p>
+$$</p>
+<p>Where $\dot{B}(x) = \frac{\partial{B}}{\partial{t}}$ and $\alpha$ is a positive real value. In this example we set $\alpha=1$. $\dot{B}(x)$ indicates how the distance of the system to the barrier changes with respect to time. So, in our formulation  $B(x) &lt; 0$ indicates whether the current state is in a unsafe set. For a more detailed explanation of Eq. (7) See Proposition 2 in "<a href="http://web.mit.edu/~jadbabai/www/papers/hscc04_2.pdf">Safety Verification of Hybrid Systems Using Barrier Certificates</a>". In Eq. (7), $B(x)$ indicates the distance between the state of the system and the unsafe set. We need to ensure that the rate of change is always bigger than the distance to the bad set by a factor $\alpha$. In our case $\alpha$ is one but in other problems it can be different. If this inequality holds, then the system is forward invariant. It will not enter the bad set. Next, we need to find a way to introduce our control input into this equation so that we can ensure that this inequality remains true. We do so through by subsituting $\dot{B}(x)$ with an equivalent expression in terms of the control input.</p>
 <p>In order to calculate $\dot{B}(x)$, we utilize the <a href="https://en.wikipedia.org/wiki/Chain_rule">chain rule</a>, which allows us to write
-$
-\begin{align*}
+$$
 \dot{B}(x) = \frac{\partial{B}}{\partial{x}} \cdot \frac{\partial{x}}{\partial{t}} \tag{8}
-\end{align*}
-$</p>
+$$</p>
 <p>Since $\frac{\partial{x}}{\partial{t}} = \dot{x}$, then
-$
-\begin{align*}
+$$
 \dot{B}(x) = \frac{\partial{B}}{\partial{x}} \cdot \dot{x} \tag{9}
-\end{align*}
-$
+$$
 This we can easily solve by taking the derivative of $B(x)$ with respect to $x$
-$
-\begin{align*}
+$$
 \frac{\partial{B}}{\partial{x}} = \begin{bmatrix} \frac{2}{a^2}(x_0 - z_0) \\ \frac{2}{b^2}(x_1 - z_1)\end{bmatrix} \tag{10}
-\end{align*}
-$
+$$
 (The expansion is shown in <a href="./01-DerivativeB.md">01-DerivativeB.md</a>)</p>
 <p>Plugging this back in the original equation (7), since (9), (10), $\alpha=1$, we get
-$
-\begin{align*}
-\dot{B}(x) &amp;\ge -\alpha\cdot(B(x))\\
-\equiv \frac{\partial{B}}{\partial{x}} \dot{x} &amp;\ge -\alpha\cdot(B(x))\\ \equiv \begin{bmatrix} \frac{2}{a^2}(x_0 - z_0)\\
-\frac{2}{b^2}(x_1 - z_1)\end{bmatrix} \dot{x} &amp;\ge -(\frac{(x_0-z_0)^2}{a^2} + \frac{(x_1-z_1)^2}{b^2} - 1) \tag{11}
-\end{align*}
-$
+$$
+\dot{B}(x) \ge -\alpha\cdot(B(x))\\
+\equiv \frac{\partial{B}}{\partial{x}} \dot{x} \ge -\alpha\cdot(B(x))\\ \equiv \begin{bmatrix} \frac{2}{a^2}(x_0 - z_0)\\
+\frac{2}{b^2}(x_1 - z_1)\end{bmatrix} \dot{x} \ge -(\frac{(x_0-z_0)^2}{a^2} + \frac{(x_1-z_1)^2}{b^2} - 1) \tag{11}
+$$
 This will be used as a constraint for one ellipse. If there are additional ellipses in the workspace, we can add more CBFs in a similar fashion.</p>
 <h2 id="Posing-the-control-problem-as-a-quadratic-program">Posing the control problem as a quadratic program<a class="anchor-link" href="#Posing-the-control-problem-as-a-quadratic-program">&#182;</a></h2><p>We can now combine the cost function with the constraints to form an optimization problem.
-$
-\begin{align*}
-\min_{u} \quad &amp; ||u_{ref} - u||\\ \textrm{s.t.} \quad &amp; \begin{bmatrix} \frac{2}{a^2}(x_0 - z_0) \\ \frac{2}{b^2}(x_1 - z_1)\end{bmatrix} u \ge -(\frac{(x_0-z_0)^2}{a^2} + \frac{(x_1-z_1)^2}{b^2} - 1) \\ \tag{12}
-\end{align*}
-$</p>
-<p>This problem can be posed as a <a href="https://en.wikipedia.org/wiki/Quadratic_programming">quadratic problem</a> of the form
-$
-\begin{align*}
-\min_{\mathbf{x}} \quad &amp; \frac{1}{2}\mathbf{x}^T P\mathbf{x} + q^T\mathbf{x} \\
-\textrm{s.t.} \quad &amp; G\mathbf{x} \le h \tag{13}
-\end{align*}
-$
+$$
+\min_{u} \quad ||u_{ref} - u||\\ \textrm{s.t.} \quad \begin{bmatrix} \frac{2}{a^2}(x_0 - z_0) \\ \frac{2}{b^2}(x_1 - z_1)\end{bmatrix} u \ge -(\frac{(x_0-z_0)^2}{a^2} + \frac{(x_1-z_1)^2}{b^2} - 1) \\ \tag{12}
+$$</p>
+<p>This problem can be posed as a <a href="https://en.wikipedia.org/wiki/Quadratic_programming">quadratic program</a> of the form
+$$
+\min_{\mathbf{x}} \quad  \frac{1}{2}\mathbf{x}^T P\mathbf{x} + q^T\mathbf{x} \\
+\textrm{s.t.} \quad  G\mathbf{x} \le h \tag{13}
+$$
 In our case, $\mathbf{x} = \dot{x}$ is the decision variable,
 Where</p>
-<p>$
-\begin{align*}
+$$
 P = I_2 \tag{14}
-\end{align*}
-$
-$
-\begin{align*}
+$$$$
 q = \begin{bmatrix} -u_{ref0} \\  -u_{ref1} \end{bmatrix} \tag{15}
-\end{align*}
-$
-$
-\begin{align*}
+$$$$
 G = \begin{bmatrix} \frac{-2}{a^2}(x_0 - z_0) \\
     \frac{-2}{b^2}(x_1 - z_1)\end{bmatrix} \tag{16}
-\end{align*}
-$
-$
-\begin{align*}
+$$$$
 h = (\frac{(x_0-z_0)^2}{a^2} + \frac{(x_1-z_1)^2}{b^2} - 1) \tag{17}
-\end{align*}
-$
-(The expansion is show in <a href="./01-CBF2Quadratic.md">01-CBF2Quadratic.md</a>)</p>
+$$<p>(The expansion is show in <a href="./01-CBF2Quadratic.md">01-CBF2Quadratic.md</a>)</p>
 <p>Here, one of advantage of this methodology is that instance of controller is not needed, as we can see (15) referes only result of controller reference $u_{ref}$. In another word, the CBF can work as an observer in whole controll system.</p>
 <h2 id="Code-implementation">Code implementation<a class="anchor-link" href="#Code-implementation">&#182;</a></h2><p>First, we import the necessary packages for our example.</p>
 

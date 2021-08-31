@@ -45,3 +45,9 @@ Even you have another configurations already, that does not matter.
 You can add the setting additionally as the list.
 
 The reference is https://newbedev.com/vscode-how-to-set-working-directory-for-debug
+
+### Reference Papers
+
+[01 - Safety Verification of Hybrid Systems Using Barrier Certificates](http://web.mit.edu/~jadbabai/www/papers/hscc04_2.pdf)
+[02 - Control Barrier Functions: Theory and Applications](https://arxiv.org/pdf/1903.11199.pdf)
+[03 - Control Barrier Functions for Systems with High Relative Degree](https://arxiv.org/pdf/1903.04706.pdf)

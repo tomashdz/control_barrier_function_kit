@@ -13996,105 +13996,70 @@ a.anchor-link {
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
 <h1 id="CBF-Tutorial---Part-2:-Dynamic-Obstacles">CBF Tutorial - Part 2: Dynamic Obstacles<a class="anchor-link" href="#CBF-Tutorial---Part-2:-Dynamic-Obstacles">&#182;</a></h1><p>Authors: Bardh, Tom and Shakiba</p>
 <h2 id="The-next-example-shows-how-we-can-use-CBFs-to-navigate-around-dynamic-obstacles.">The next example shows how we can use CBFs to navigate around dynamic obstacles.<a class="anchor-link" href="#The-next-example-shows-how-we-can-use-CBFs-to-navigate-around-dynamic-obstacles.">&#182;</a></h2><p>Again we start with the <strong>nimble_ant</strong> system, which has the following dynamics:
-$
-\begin{align*}
+$$
   \dot{xr} = u = \begin{bmatrix}u_0 \\ u_1\end{bmatrix} \tag{1}\\
-\end{align*}
-$
+$$
 Given an initial position $x^{init}$, our goal is to control this system to a goal location $xr^{goal}$.
-$
-\begin{align*}
+$$
 xr^{init} = \begin{bmatrix} xr^{init}_0 \\  xr^{init}_1 \end{bmatrix} \qquad    xr^{goal} = \begin{bmatrix} xr^{goal}_0 \\  xr^{goal}_1 \end{bmatrix} \tag{2}\\
-\end{align*}
-$
+$$
 However, different from our last example, the obstacles are dynamic. That means that our CBF depends not only on the dynamics of the system, but the obstacles as well. Recall our definition of the Barrier Function:
-$
-\begin{align*}
+$$
 \dot{B}(x) \ge -\alpha\cdot(B(x)) \tag{3}
-\end{align*}
-$
+$$
 In this case, the barrier function is defined as follows:</p>
-<p>$
-\begin{align*}
+$$
 B(xr,xo) = \frac{(xr_0-xo_0)^2}{a^2} + \frac{(xr_1-xo_1)^2}{b^2} - 1 \tag{4}
-\end{align*}
-$</p>
-<p>where the robot states $xr$ and the obstacle states $xo$.</p>
-<p>To obtain the derivative, we utilize <a href="https://en.wikipedia.org/wiki/Chain_rule#Multivariable_case">multivariate chain rule</a>:</p>
-<p>$
-\begin{align*}
+$$<p>where the robot states $xr$ and the obstacle states $xo$.
+To obtain the derivative, we utilize <a href="https://en.wikipedia.org/wiki/Chain_rule#Multivariable_case">multivariate chain rule</a>:</p>
+$$
 \dot{B}(xr,xo) = \frac{\partial{B}}{\partial{xr}} \cdot \frac{\partial{xr}}{\partial{t}} + \frac{\partial{B}}{\partial{xo}} \cdot \frac{\partial{xo}}{\partial{t}} \tag{5}
-\end{align*}
-$</p>
-<p>Since $\frac{\partial{xr}}{\partial{t}} = \dot{xr}$, $\frac{\partial{xo}}{\partial{t}} = \dot{xo}$ then</p>
-<p>$
-\begin{align*}
+$$<p>Since $\frac{\partial{xr}}{\partial{t}} = \dot{xr}$, $\frac{\partial{xo}}{\partial{t}} = \dot{xo}$ then</p>
+$$
 \dot{B}(xr,xo) = \frac{\partial B}{\partial xr} \cdot \dot{xr} + \frac{\partial B}{\partial xo} \cdot \dot{xo} \tag{6}
-\end{align*}
-$
-this is equivalent to
-$
-\begin{align*}
+$$<p>this is equivalent to
+$$
 \dot{B}(xr,xo) = \begin{bmatrix} \frac{2}{a^2} (xr_0 - xo_0) \\  \frac{2}{b^2} (xr_1 - xo_1) \end{bmatrix} \cdot \dot{xr} + 
 \begin{bmatrix} \frac{2}{a^2} (xo_0 - xr_0) \\  \frac{2}{b^2} (xo_1 - xr_1) \end{bmatrix} \cdot \dot{xo} \tag{7}
-\end{align*}
-$
+$$
 (The expansion is shown in <a href="./02-DerivativeB.md">02-DerivativeB.md</a>)</p>
 <p>here, $\dot{xr}$ is our control input and lets consider an example where the obstacle moves only left. That is $\dot{xo} = \begin{bmatrix} -1 \\ 0 \end{bmatrix}$.
-$
-\begin{align*}
+$$
 \dot{B}(xr,xo) = \begin{bmatrix} \frac{2}{a^2} (xr_0 - xo_0) \\  \frac{2}{b^2} (xr_1 - xo_1) \end{bmatrix} \cdot \begin{bmatrix}u_0 \\ u_1\end{bmatrix} +
 \begin{bmatrix} \frac{2}{a^2} (xo_0 - xr_0) \\  \frac{2}{b^2} (xo_1 - xr_1) \end{bmatrix} \cdot \begin{bmatrix}-1 \\ 0\end{bmatrix} \tag{8}
-\end{align*}
-$
+$$
 To make our implementation easier, we can also represent this in an augmented state
-$
-\begin{align*}
+$$
 x = \begin{bmatrix} xr_0 \\  xr_1 \\ xo_0 \\ xo_1 \end{bmatrix} \tag{9}
-\end{align*}
-$
+$$
 And in this case
-$
-\begin{align*}
+$$
 \dot{B}(x) = \begin{bmatrix} \frac{2}{a^2} (xr_0 - xo_0) \\  \frac{2}{b^2} (xr_1 - xo_1) \\ \frac{2}{a^2} (xo_0 - xr_0) \\  \frac{2}{b^2} (xo_1 - xr_1) \end{bmatrix} \cdot \begin{bmatrix}u_0 \\ u_1 \\ -1 \\ 0\end{bmatrix} \tag{10}
-\end{align*}
-$
+$$
 Now, we solve the following quadratic program
-$
-\begin{align*}
-\min_{u} \quad &amp; ||u_{ref} - u||\\
-\textrm{s.t.} \quad &amp; \begin{bmatrix} \frac{2}{a^2} (xr_0 - xo_0) \\  \frac{2}{b^2} (xr_1 - xo_1) \\ \frac{2}{a^2} (xo_0 - xr_0) \\  \frac{2}{b^2} (xo_1 - xr_1) \end{bmatrix} \cdot \begin{bmatrix}u_0 \\ u_1 \\ -1 \\ 0\end{bmatrix} \ge -(\frac{(xr_0-xo_0)^2}{a^2} + \frac{(xr_1-xo_1)^2}{b^2} - 1) \tag{11}
-\end{align*}
-$
-We can pose this a quadratic program.
-$
-\begin{align*}
-\min_{\mathbf{x}} \quad &amp; \frac{1}{2}\mathbf{x}^T P\mathbf{x} + q^T\mathbf{x} \\
-\textrm{s.t.} \quad &amp; G\mathbf{x} \le h \tag{12}
-\end{align*}
-$
+$$
+\min_{u} \quad ||u_{ref} - u||\\
+\textrm{s.t.} \quad \begin{bmatrix} \frac{2}{a^2} (xr_0 - xo_0) \\  \frac{2}{b^2} (xr_1 - xo_1) \\ \frac{2}{a^2} (xo_0 - xr_0) \\  \frac{2}{b^2} (xo_1 - xr_1) \end{bmatrix} \cdot \begin{bmatrix}u_0 \\ u_1 \\ -1 \\ 0\end{bmatrix} \ge -(\frac{(xr_0-xo_0)^2}{a^2} + \frac{(xr_1-xo_1)^2}{b^2} - 1) \tag{11}
+$$
+We can pose this a quadratic program:
+$$
+\min_{\mathbf{x}} \quad  \frac{1}{2}\mathbf{x}^T P\mathbf{x} + q^T\mathbf{x} \\
+\textrm{s.t.} \quad  G\mathbf{x} \le h \tag{12}
+$$
 In our case, $\mathbf{x} = \dot{x}$ is the decision variable,
 Where
-$
-\begin{align*}
+$$
 P = I_4 \tag{13}
-\end{align*}
-$
-$
-\begin{align*}
+$$
+$$
 q = \begin{bmatrix} -u_{ref0} \\  -u_{ref1} \\ 0 \\ 0 \end{bmatrix} \tag{14}
-\end{align*}
-$
-$
-\begin{align*}
+$$
+$$
 G = \begin{bmatrix} \frac{2}{a^2} (xr_0 - xo_0) \\  \frac{2}{b^2} (xr_1 - xo_1) \\ \frac{2}{a^2} (xo_0 - xr_0) \\  \frac{2}{b^2} (xo_1 - xr_1) \end{bmatrix} \tag{15}
-\end{align*}
-$
-$
-\begin{align*}
+$$
+$$
 h = (\frac{(xr_0-xo_0)^2}{a^2} + \frac{(xr_1-xo_1)^2}{b^2} - 1) \tag{16}
-\end{align*}
-$
+$$
 (The expansion is show in <a href="./02-CBF2Quadratic2.md">02-CBF2Quadratic2.md</a>)</p>
 <p>Lets consider an example where our nimble ant system starts at position $xr = \begin{bmatrix} 0 \\  3.2 \end{bmatrix}$ and an obstacle starts at postion $xo = \begin{bmatrix} xo_0 \\  xo_1 \end{bmatrix} = \begin{bmatrix} 10 \\  3.5 \end{bmatrix}$.</p>
 
@@ -14317,12 +14282,12 @@ x_0	 x_1
 
 
 
-<div id="113e4091-143c-41e4-8d85-48065c285b7e" class="jupyter-widgets jp-OutputArea-output ">
+<div id="c278e858-3f6c-4359-ad99-fc2ce8083125" class="jupyter-widgets jp-OutputArea-output ">
 <script type="text/javascript">
-var element = document.getElementById('113e4091-143c-41e4-8d85-48065c285b7e');
+var element = document.getElementById('c278e858-3f6c-4359-ad99-fc2ce8083125');
 </script>
 <script type="application/vnd.jupyter.widget-view+json">
-{"version_major": 2, "version_minor": 0, "model_id": "9fa003ce631e4ad98b8a9756ffea14c3"}
+{"version_major": 2, "version_minor": 0, "model_id": "cc96f3f5f1c64ffd848993469dc057cd"}
 </script>
 </div>
 
@@ -15025,7 +14990,7 @@ AAAAAQAAAABMYXZmNTguMjkuMTAw
 
 
 <script type="application/vnd.jupyter.widget-state+json">
-{"state": {"ca169d3c79464b8ba787fa77cbbc600f": {"model_name": "LayoutModel", "model_module": "@jupyter-widgets/base", "model_module_version": "1.2.0", "state": {"_model_module": "@jupyter-widgets/base", "_model_module_version": "1.2.0", "_model_name": "LayoutModel", "_view_count": null, "_view_module": "@jupyter-widgets/base", "_view_module_version": "1.2.0", "_view_name": "LayoutView", "align_content": null, "align_items": null, "align_self": null, "border": null, "bottom": null, "display": null, "flex": null, "flex_flow": null, "grid_area": null, "grid_auto_columns": null, "grid_auto_flow": null, "grid_auto_rows": null, "grid_column": null, "grid_gap": null, "grid_row": null, "grid_template_areas": null, "grid_template_columns": null, "grid_template_rows": null, "height": null, "justify_content": null, "justify_items": null, "left": null, "margin": null, "max_height": null, "max_width": null, "min_height": null, "min_width": null, "object_fit": null, "object_position": null, "order": null, "overflow": null, "overflow_x": null, "overflow_y": null, "padding": null, "right": null, "top": null, "visibility": null, "width": null}}, "9fa003ce631e4ad98b8a9756ffea14c3": {"model_name": "MPLCanvasModel", "model_module": "jupyter-matplotlib", "model_module_version": "^0.9.0", "state": {"_cursor": "pointer", "_dom_classes": [], "_figure_label": "Figure", "_height": 0, "_image_mode": "full", "_message": "", "_model_module": "jupyter-matplotlib", "_model_module_version": "^0.9.0", "_model_name": "MPLCanvasModel", "_rubberband_height": 0, "_rubberband_width": 0, "_rubberband_x": 0, "_rubberband_y": 0, "_view_count": null, "_view_module": "jupyter-matplotlib", "_view_module_version": "^0.9.0", "_view_name": "MPLCanvasView", "_width": 0, "capture_scroll": false, "footer_visible": true, "header_visible": true, "layout": "IPY_MODEL_ca169d3c79464b8ba787fa77cbbc600f", "resizable": true, "toolbar": "IPY_MODEL_adc1dc5b74f047b595ceec7788ccb4ce", "toolbar_position": "left", "toolbar_visible": true}}, "7a69d7c3ec944290969f94accffb6e7c": {"model_name": "LayoutModel", "model_module": "@jupyter-widgets/base", "model_module_version": "1.2.0", "state": {"_model_module": "@jupyter-widgets/base", "_model_module_version": "1.2.0", "_model_name": "LayoutModel", "_view_count": null, "_view_module": "@jupyter-widgets/base", "_view_module_version": "1.2.0", "_view_name": "LayoutView", "align_content": null, "align_items": null, "align_self": null, "border": null, "bottom": null, "display": null, "flex": null, "flex_flow": null, "grid_area": null, "grid_auto_columns": null, "grid_auto_flow": null, "grid_auto_rows": null, "grid_column": null, "grid_gap": null, "grid_row": null, "grid_template_areas": null, "grid_template_columns": null, "grid_template_rows": null, "height": null, "justify_content": null, "justify_items": null, "left": null, "margin": null, "max_height": null, "max_width": null, "min_height": null, "min_width": null, "object_fit": null, "object_position": null, "order": null, "overflow": null, "overflow_x": null, "overflow_y": null, "padding": null, "right": null, "top": null, "visibility": null, "width": null}}, "adc1dc5b74f047b595ceec7788ccb4ce": {"model_name": "ToolbarModel", "model_module": "jupyter-matplotlib", "model_module_version": "^0.9.0", "state": {"_current_action": "", "_dom_classes": [], "_model_module": "jupyter-matplotlib", "_model_module_version": "^0.9.0", "_model_name": "ToolbarModel", "_view_count": null, "_view_module": "jupyter-matplotlib", "_view_module_version": "^0.9.0", "_view_name": "ToolbarView", "button_style": "", "collapsed": true, "layout": "IPY_MODEL_7a69d7c3ec944290969f94accffb6e7c", "orientation": "vertical", "toolitems": [["Home", "Reset original view", "home", "home"], ["Back", "Back to previous view", "arrow-left", "back"], ["Forward", "Forward to next view", "arrow-right", "forward"], ["Pan", "Left button pans, Right button zooms\nx/y fixes axis, CTRL fixes aspect", "arrows", "pan"], ["Zoom", "Zoom to rectangle\nx/y fixes axis, CTRL fixes aspect", "square-o", "zoom"], ["Download", "Download plot", "floppy-o", "save_figure"]]}}}, "version_major": 2, "version_minor": 0}
+{"state": {"5c1fb42153c14c14a90cfb4dc5981bfb": {"model_name": "LayoutModel", "model_module": "@jupyter-widgets/base", "model_module_version": "1.2.0", "state": {"_model_module": "@jupyter-widgets/base", "_model_module_version": "1.2.0", "_model_name": "LayoutModel", "_view_count": null, "_view_module": "@jupyter-widgets/base", "_view_module_version": "1.2.0", "_view_name": "LayoutView", "align_content": null, "align_items": null, "align_self": null, "border": null, "bottom": null, "display": null, "flex": null, "flex_flow": null, "grid_area": null, "grid_auto_columns": null, "grid_auto_flow": null, "grid_auto_rows": null, "grid_column": null, "grid_gap": null, "grid_row": null, "grid_template_areas": null, "grid_template_columns": null, "grid_template_rows": null, "height": null, "justify_content": null, "justify_items": null, "left": null, "margin": null, "max_height": null, "max_width": null, "min_height": null, "min_width": null, "object_fit": null, "object_position": null, "order": null, "overflow": null, "overflow_x": null, "overflow_y": null, "padding": null, "right": null, "top": null, "visibility": null, "width": null}}, "cc96f3f5f1c64ffd848993469dc057cd": {"model_name": "MPLCanvasModel", "model_module": "jupyter-matplotlib", "model_module_version": "^0.9.0", "state": {"_cursor": "pointer", "_dom_classes": [], "_figure_label": "Figure", "_height": 0, "_image_mode": "full", "_message": "", "_model_module": "jupyter-matplotlib", "_model_module_version": "^0.9.0", "_model_name": "MPLCanvasModel", "_rubberband_height": 0, "_rubberband_width": 0, "_rubberband_x": 0, "_rubberband_y": 0, "_view_count": null, "_view_module": "jupyter-matplotlib", "_view_module_version": "^0.9.0", "_view_name": "MPLCanvasView", "_width": 0, "capture_scroll": false, "footer_visible": true, "header_visible": true, "layout": "IPY_MODEL_5c1fb42153c14c14a90cfb4dc5981bfb", "resizable": true, "toolbar": "IPY_MODEL_f582fc5df9194b62905797829cf6ac63", "toolbar_position": "left", "toolbar_visible": true}}, "d99b37697a50494e8d881c48a6f22825": {"model_name": "LayoutModel", "model_module": "@jupyter-widgets/base", "model_module_version": "1.2.0", "state": {"_model_module": "@jupyter-widgets/base", "_model_module_version": "1.2.0", "_model_name": "LayoutModel", "_view_count": null, "_view_module": "@jupyter-widgets/base", "_view_module_version": "1.2.0", "_view_name": "LayoutView", "align_content": null, "align_items": null, "align_self": null, "border": null, "bottom": null, "display": null, "flex": null, "flex_flow": null, "grid_area": null, "grid_auto_columns": null, "grid_auto_flow": null, "grid_auto_rows": null, "grid_column": null, "grid_gap": null, "grid_row": null, "grid_template_areas": null, "grid_template_columns": null, "grid_template_rows": null, "height": null, "justify_content": null, "justify_items": null, "left": null, "margin": null, "max_height": null, "max_width": null, "min_height": null, "min_width": null, "object_fit": null, "object_position": null, "order": null, "overflow": null, "overflow_x": null, "overflow_y": null, "padding": null, "right": null, "top": null, "visibility": null, "width": null}}, "f582fc5df9194b62905797829cf6ac63": {"model_name": "ToolbarModel", "model_module": "jupyter-matplotlib", "model_module_version": "^0.9.0", "state": {"_current_action": "", "_dom_classes": [], "_model_module": "jupyter-matplotlib", "_model_module_version": "^0.9.0", "_model_name": "ToolbarModel", "_view_count": null, "_view_module": "jupyter-matplotlib", "_view_module_version": "^0.9.0", "_view_name": "ToolbarView", "button_style": "", "collapsed": true, "layout": "IPY_MODEL_d99b37697a50494e8d881c48a6f22825", "orientation": "vertical", "toolitems": [["Home", "Reset original view", "home", "home"], ["Back", "Back to previous view", "arrow-left", "back"], ["Forward", "Forward to next view", "arrow-right", "forward"], ["Pan", "Left button pans, Right button zooms\nx/y fixes axis, CTRL fixes aspect", "arrows", "pan"], ["Zoom", "Zoom to rectangle\nx/y fixes axis, CTRL fixes aspect", "square-o", "zoom"], ["Download", "Download plot", "floppy-o", "save_figure"]]}}}, "version_major": 2, "version_minor": 0}
 </script>
 
 

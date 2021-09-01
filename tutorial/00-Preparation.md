@@ -1,5 +1,10 @@
 # CBF Tutorial - Part 0: Preparration
 
+## Recomended environment
+```text
+OS: Ubuntu 18.04
+Python: python3.6
+```
 ## Python packages
 
 You can install necesarry packages.

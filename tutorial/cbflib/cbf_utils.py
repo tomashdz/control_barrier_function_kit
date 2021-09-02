@@ -1,4 +1,4 @@
-from matplotlib.patches import Ellipse
+from matplotlib.patches import Ellipse, Rectangle
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -45,6 +45,21 @@ def plot_cbf_elements(ax, bad_sets, goal_x):
         curr_bs = bad_sets[idxi]
         ell = Ellipse((curr_bs[0], curr_bs[1]), 2 *
                       curr_bs[2], 2 * curr_bs[3], color='r', alpha=0.3)
+        ax.add_patch(ell)
+
+    goal_square = plt.Rectangle(
+        goal_x-np.array([.1, .1]), .2, .2, color='g', alpha=0.5)
+
+    ax.add_patch(goal_square)
+
+    return ax
+
+def plot_cbf_elements_rectangle(ax, bad_sets, goal_x):
+    # Plot the bad sets and the goal region
+    for idxi, _ in enumerate(bad_sets):
+        curr_bs = bad_sets[idxi]
+        ell = Rectangle((curr_bs[0]-curr_bs[2], curr_bs[1]-curr_bs[3]), 2 *
+                      curr_bs[2], 2 * curr_bs[3], color='g', alpha=0.3)
         ax.add_patch(ell)
 
     goal_square = plt.Rectangle(

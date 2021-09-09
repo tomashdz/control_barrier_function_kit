@@ -66,4 +66,5 @@ The reference is https://newbedev.com/vscode-how-to-set-working-directory-for-de
 
 ### Our papers
 [04 - Risk-bounded control using stochastic barrier functions](https://www.bhoxha.com/papers/LCSS2020.pdf)  
-[05 - Safe Navigation in Human Occupied Environments Using Sampling and Control Barrier Functions](https://arxiv.org/pdf/2105.01204.pdf)
+[05 - Safe Navigation in Human Occupied Environments Using Sampling and Control Barrier Functions](https://arxiv.org/pdf/2105.01204.pdf)  
+[06 - Risk-Bounded Control with Kalman Filtering and Stochastic Barrier Functions]()

@@ -23,6 +23,6 @@ $$
 = \begin{bmatrix}
         \frac{2}{a^2}(x_0 - z_0)\\
         \frac{2}{b^2}(x_1 - z_1)
-   \end{bmatrix}
+   \end{bmatrix}　\tag{10}
 \end{aligned}
 $$

@@ -68,3 +68,24 @@ The reference is https://newbedev.com/vscode-how-to-set-working-directory-for-de
 [04 - Risk-bounded control using stochastic barrier functions](https://www.bhoxha.com/papers/LCSS2020.pdf)  
 [05 - Safe Navigation in Human Occupied Environments Using Sampling and Control Barrier Functions](https://arxiv.org/pdf/2105.01204.pdf)  
 [06 - Risk-Bounded Control with Kalman Filtering and Stochastic Barrier Functions]()
+
+### Applications
+**Legged robots**
+
+[07 - 3D Dynamic Walking on Stepping Stones with Control Barrier Functions](https://ece.umich.edu/faculty/grizzle/papers/3DSteppingStones_CDC2016.pdf)
+
+[08 - Multi-Layered Safety for Legged Robots via Control Barrier Functions and Model Predictive Control](https://arxiv.org/pdf/2011.00032.pdf)
+
+**AMS**
+
+[09 - Safety-Critical Model Predictive Control with Discrete-Time Control Barrier Function](https://arxiv.org/pdf/2007.11718.pdf)
+
+[10 - Safe teleoperation of dynamic uavs through control barrier functions](https://hybrid-robotics.berkeley.edu/publications/ICRA2018_Safe_Teleoperation.pdf)
+
+**Multi-agent systems**
+
+[11 - Safety Barrier Certificates for Collisions-Free Multirobot Systems](http://ames.caltech.edu/wang2017safety.pdf)
+
+**COVID**
+
+[12 - Safety-Critical Control of Compartmental Epidemiological Models with Measurement Delays](https://arxiv.org/pdf/2009.10262.pdf)

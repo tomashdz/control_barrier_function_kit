@@ -55,17 +55,26 @@ $$
 is the decision variable, where,
 $$
 \begin{aligned}
-P = I_2 = \begin{bmatrix}1 & 0 \\　0 & 1\end{bmatrix} \tag{14}
+P = I_2 =   \begin{bmatrix}
+                1 & 0\\
+                0 & 1
+            \end{bmatrix} \tag{14}
 \end{aligned}
 $$
 $$
 \begin{aligned}
-q = \begin{bmatrix} -u_{ref0} \\　-u_{ref1} \end{bmatrix} \tag{15}
+q = \begin{bmatrix}
+        -u_{ref0}\\
+        -u_{ref1}
+    \end{bmatrix} \tag{15}
 \end{aligned}
 $$
 $$
 \begin{aligned}
-G = \begin{bmatrix} \frac{-2}{a^2}(x_0 - z_0) \\　\frac{-2}{b^2}(x_1 - z_1)\end{bmatrix} \tag{16}
+G = \begin{bmatrix}
+        \frac{-2}{a^2}(x_0 - z_0)\\
+        \frac{-2}{b^2}(x_1 - z_1)
+    \end{bmatrix}^T \tag{16}
 \end{aligned}
 $$
 $$

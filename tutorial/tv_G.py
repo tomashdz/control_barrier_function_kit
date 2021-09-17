@@ -30,28 +30,11 @@ h = pred - sqrt((xr0-x_goal[0])**2 + (xr1-x_goal[1])**2)
 #B  = -5/15*t + 5 + h
 
 # calculate norm between two points 
-B_exp =  11*exp(-0.4796*t) + 9 - sqrt((xr0-x_goal[0])**2 + (xr1-x_goal[1])**2)
-B = B_exp
-
-# B_exp =  k*exp(-0.8*t) + h
-# k0 = cbf_find_param(x_0,x_goal,h,B_exp,5,15)
-# B = B_exp.subs(k,k0)
-
-
-
-
-
-
-
-#! F_[0,15](||robot - goal||< 1)
-# B = -1*t + 16 - sqrt((xr0-x_goal[0])**2 + (xr1-x_goal[1])**2)
-
-# ! G_[5,15] (goal<value)
-#B = 11*exp(-0.4796*t) + 9 - sqrt((xr0-x_goal[0])**2 + (xr1-x_goal[1])**2)
-
-# -1*t + 5 - sqrt((xr0-x_goal[0])**2 + (xr1-x_goal[1])**2)
-# B = -5/15*t + (sum(x_goal**2)) - sqrt((xr0-x_goal[0])**2 + (xr1-x_goal[1])**2)
-
+# B_exp =  11*exp(-0.4796*t) + 9 - sqrt((xr0-x_goal[0])**2 + (xr1-x_goal[1])**2)
+# B = B_exp
+B_exp =  k*exp(-0.8*t) + h
+k0 = cbf_find_param(x_0,x_goal,h,B_exp,5,15)
+B = B_exp.subs(k,k0)
 
 # dx = g(x)u - not used
 f = 0
@@ -70,8 +53,6 @@ params = {'x_goal': x_goal, 'bad_sets': bad_sets,
 
 # Disable cvxopt optimiztaion output
 cvxopt.solvers.options['show_progress'] = False
-
-
 
 # Simulate system
 print('\nComputing trajectories for the initial condition:')
@@ -92,11 +73,11 @@ x[:, 0] = x_0
 for i in range(len(T)-1):
     x[:, i+1] = x[:, i] + dt * \
         np.array(sys_and_ctrl.nimble_ant_tv_f(T[i], x[:, i], [], params))
-    if B.subs([(t,T[i]),(xr0,x[0,i]),(xr1,x[1,i])]) > h.subs([(xr0,x[0,i]),(xr1,x[1,i])]) and T[i]>=5:
-        print(T[i])
-        print(float(B.subs([(t,T[i]),(xr0,x[0,i]),(xr1,x[1,i])])))
-        print(float(h.subs([(xr0,x[0,i]),(xr1,x[1,i])])))
-        print('\n')
+    # if B.subs([(t,T[i]),(xr0,x[0,i]),(xr1,x[1,i])]) > h.subs([(xr0,x[0,i]),(xr1,x[1,i])]) and T[i]>=5:
+    #     print(T[i])
+    #     print(float(B.subs([(t,T[i]),(xr0,x[0,i]),(xr1,x[1,i])])))
+    #     print(float(h.subs([(xr0,x[0,i]),(xr1,x[1,i])])))
+    #     print('\n')
 
 
 print("\n*Simulation Done. See plot for animation...")
@@ -133,9 +114,6 @@ def animate(i):
     time_text.set_text(i*dt)
     return line1, time_text, robot_circ
 
-
-
-
 ani = animation.FuncAnimation(
     fig1, animate, init_func=init, interval=10, frames=n_samples, repeat=False)
 
@@ -151,11 +129,8 @@ for i in range(len(T)):
 ax2.plot(T, dist_to_goal)
 plt.ylim(-2, 20)
 plt.xlim(0, 20)
-#!
 plt.axvline(x=5, color='r')
-#!
 plt.axvline(x=15, color='g')
-
 
 plt.xlabel('Time (s)')
 plt.ylabel('Distance to goal (m)')
@@ -178,10 +153,6 @@ dist_text_3 = ax2.text(0.2, 1.10, 'G_[5,15](||x - [10 5]^T||< 10)', transform=ax
 patch_x_below_0 = plt.Rectangle(
     (0, pred), 20, -20, color='r', alpha=0.2)
 ax2.add_patch(patch_x_below_0)
-
-
-
-
 
 plt.show()
 print(x[0][-1], x[1][-1])

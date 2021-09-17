@@ -15,7 +15,7 @@ x_goal = np.array([10, 0])
 x_0 = np.array([0, 0])
 
 # Undesired areas in ellipse format (x,y,rad_x,rad_y) - Use example(0) through example(3)
-bad_sets = [] 
+bad_sets = []
 
 # Parameters for reference controller
 ctrl_param = []
@@ -25,11 +25,9 @@ xr0, xr1, u, t, xr0_dot, xr1_dot, k = symbols(
     'xr0 xr1 u t xr0_dot xr1_dot, k')
 
 #! F_[5,15](||robot - goal|| < 5)
-h = 5 - sqrt((xr0-x_goal[0])**2 + (xr1-x_goal[1])**2)
+h = 4 - sqrt((xr0-x_goal[0])**2 + (xr1-x_goal[1])**2)
 B_exp =  -k/15*t + k + h
-
 k0 = cbf_find_param(x_0,x_goal,h,B_exp,5,15)
-
 B = B_exp.subs(k,k0)
 
 f = 0
@@ -89,10 +87,7 @@ plt.gca().spines['right'].set_visible(False)
 
 line1, = ax1.plot([], [], lw=2)
 
-
 time_text = ax1.text(0.02, 0.95, '', transform=ax1.transAxes)
-
-# plot circle for position of robot
 
 robot_circ = plt.Circle(
         (x[0][-1], x[1][-1]), 0.15, color='r', fill=True, alpha=0.5)

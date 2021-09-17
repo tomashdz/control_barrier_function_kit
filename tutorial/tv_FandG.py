@@ -9,9 +9,6 @@ from sympy import symbols, Matrix, sin, cos, lambdify, exp, sqrt, log, diff, Mul
 from cbf_create import *
 import math
 
-# Robot Goal
-
-
 # intial condition
 x_0 = np.array([0, 0])
 
@@ -22,7 +19,6 @@ bad_sets = [] #cbf_utils.example(1)
 ctrl_param = []
 
 # Symbols and equations for the CBF
-# x_0, x_1, z_0, z_1, a, b, t = symbols('x_0 x_1 z_0 z_1 a b t')
 xr0, xr1, u, t, xr0_dot, xr1_dot, k = symbols(
     'xr0 xr1 u t xr0_dot xr1_dot, k')
 
@@ -65,8 +61,6 @@ params = {'x_goal': x_goal_2, 'bad_sets': bad_sets,
 
 # Disable cvxopt optimiztaion output
 cvxopt.solvers.options['show_progress'] = False
-
-
 
 # Simulate system
 print('\nComputing trajectories for the initial condition:')
@@ -176,10 +170,6 @@ dist_text_3 = ax2.text(0, 1.10, 'F_[5,15](||x - [10 0]^T||< 5) /\ G_[5,15](||x -
 patch_x_below_0 = plt.Rectangle(
     (0, 0), 20, -2, color='g', alpha=0.2)
 ax2.add_patch(patch_x_below_0)
-
-
-
-
 
 plt.show()
 print(x[0][-1], x[1][-1])

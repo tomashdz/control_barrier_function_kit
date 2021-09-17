@@ -68,3 +68,17 @@ def plot_cbf_elements_rectangle(ax, bad_sets, goal_x):
     ax.add_patch(goal_square)
 
     return ax
+
+def plot_cbf_elements_circle(ax, bad_sets, goal_x, rad, c):
+    # Plot the bad sets and the goal region
+    for idxi, _ in enumerate(bad_sets):
+        curr_bs = bad_sets[idxi]
+        ell = Rectangle((curr_bs[0]-curr_bs[2], curr_bs[1]-curr_bs[3]), 2 *
+                      curr_bs[2], 2 * curr_bs[3], color='g', alpha=0.3)
+        ax.add_patch(ell)
+
+    goal_square = plt.Circle(
+        goal_x-np.array([.1, .1]), rad, color=c, alpha=0.2)
+    ax.add_patch(goal_square)
+
+    return ax

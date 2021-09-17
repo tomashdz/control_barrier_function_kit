@@ -6,6 +6,8 @@ import cvxopt as cvxopt
 
 
 def cvxopt_solve_qp(P, q, G=None, h=None, A=None, b=None):
+    cvxopt.solvers.options['show_progress'] = False
+    cvxopt.solvers.options['max_iter'] = 1000
     P = .5 * (P + P.T)  # make sure P is symmetric
     args = [cvxopt.matrix(P), cvxopt.matrix(q)]
     if G is not None:

@@ -38,7 +38,7 @@ class CBF:
                     temp_expr = diff(B, i)
                     self.expr_bs.append(temp_expr)
                     self.lamb_G.append(
-                        lambdify([symbs], temp_expr, "math"))
+                        lambdify([symbs+(t,)], temp_expr, "math"))
             else:
                 self.lamb_h = lambdify([symbs], B, "math")
                 for i in self.states:
@@ -75,7 +75,7 @@ class CBF:
         if self.degree == 1:
             if self.time_varying == 1:
                 for lamb in self.lamb_G:
-                    tmp_g = lamb(tuple(x))
+                    tmp_g = lamb(tuple(x)+(t,))
                     self.G.append(-1*tmp_g)
                 self.h.append((10*self.lamb_h(tuple(x)+(t,)))) # 
             else:

@@ -3,7 +3,7 @@ from sympy import symbols, Matrix, sin, cos, lambdify, exp, sqrt, log, diff, Mul
 
 
 class CBF:
-    def __init__(self, B, f, g, states, symbs, degree, bad_sets=[], states_dot=[], time_varying=0):
+    def __init__(self, B, f, g, states, symbs, degree, bad_sets=[], states_dot=[], time_varying=0, alpha = 1):
         """ This initializes the CBF and computes functions for the G and h matrices for convex optimization later on.
         Args:
             B (sympy expression):   The expression for the bad set representation
@@ -47,7 +47,8 @@ class CBF:
                     self.lamb_G.append(
                         lambdify([symbs], temp_expr, "math"))
         elif self.degree == 2:
-            expr = self.get_expr(B, f, g, states, states_dot)
+            expr = self.get_expr(B, f, g, states, states_dot, alpha, 0)
+
             G, h = self.decompose_G_h(expr, g, states_dot)
 
             self.lamb_G.append(
@@ -107,21 +108,20 @@ class CBF:
             raise ValueError("degree > 2 not implemented yet")
         return self.G, self.h
 
-    def get_expr(self, B, f, g, states, states_dot):
+    def get_expr(self, B, f, g, states, states_dot, alpha, count):
 
-        a = 10
         B_dot_var = []
         for i in states:
             B_dot_var.append(diff(B, i))
         B_dot = Matrix(B_dot_var)
 
         B_dot_f = B_dot.T * states_dot
-        phi = B_dot_f[0] + a * B
+        phi = B_dot_f[0] + alpha[count] * B
         self.phi.append(phi)
         if states_dot[2] in phi.free_symbols:  # ! This needs to be revised
             return phi
         else:
-            return self.get_expr(phi, f, g, states, states_dot)
+            return self.get_expr(phi, f, g, states, states_dot, alpha, count=count+1)
 
     def decompose_G_h(self, expr, g, states_dot):
         G = []

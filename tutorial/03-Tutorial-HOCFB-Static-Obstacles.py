@@ -5,12 +5,13 @@ from matplotlib.patches import Ellipse
 from sympy import symbols, Matrix, sin, cos
 import matplotlib.animation as animation
 from cbflib import cbf, cbf_utils, sys_and_ctrl
+from sympy import symbols, Matrix, sin, cos, lambdify, exp, sqrt, log, diff, Mul, srepr, Symbol
 
 # Robot Goal
 x_goal = np.array([5, 5])
 
 # Undesired areas in ellipse format (x,y,rad_x,rad_y) - Use example(0) through example(3)
-bad_sets = cbf_utils.example(0)
+bad_sets = cbf_utils.example(3)
 
 # Parameters for reference controller
 ctrl_param = [10]
@@ -30,7 +31,7 @@ states_dot = Matrix([cos(xr2), sin(xr2), xr2_dot])
 
 # Initialize CBF
 myCBF = cbf.CBF(B=B, f=f, g=g, symbs = symbs, states=(xr0, xr1, xr2),
-                bad_sets=bad_sets, states_dot=states_dot, degree=2)
+                bad_sets=bad_sets, states_dot=states_dot, degree=2,alpha = [10, 10])
 
 #? Simulation settings
 T_max = 10

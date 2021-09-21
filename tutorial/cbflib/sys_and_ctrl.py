@@ -222,7 +222,7 @@ def unicycle_c(x, params):
         x_sol = sol['x']
     except:
         x_sol = [0]
-        print("bad")
+        print("no sol")
     # print(x, ' G: ', G, ' h: ', h, ' x_sol: ', x_sol)
     return x_sol[0:1]
 
@@ -283,7 +283,7 @@ def unicycle_agent_c(x, params):
         x_sol = sol['x']
     except:
         x_sol = [0]
-        print("bad")
+        print(["No sol" + datetime.datetime.now().time()])
     # print(x, ' G: ', G, ' h: ', h, ' x_sol: ', x_sol)
     return x_sol[0:1]
 

@@ -30,7 +30,7 @@ L^2_fB(x) &= \frac{\partial}{\partial x}(L_fB(x)) \cdot f(x) \\
 &= \begin{bmatrix}
         \frac{2}{a^2}cos(xr_2)\\
         \frac{2}{b^2}sin(xr_2)\\
-        -\frac{2}{a^2}(xr_0 - z_0)\cdot sin(xr_2)+\frac{2}{b^2}(xr_1 - z_1)\cdot cos(xr_2))\\
+        -\frac{2}{a^2}(xr_0 - z_0)\cdot sin(xr_2)+\frac{2}{b^2}(xr_1 - z_1)\cdot cos(xr_2)\\
     \end{bmatrix}^T
     \cdot
     \begin{bmatrix}
@@ -52,7 +52,7 @@ L_gL_fB(x) &= \frac{\partial}{\partial x}(L_fB(x)) \cdot g(x) \\
 &= \begin{bmatrix}
         \frac{2}{a^2}cos(xr_2)\\
         \frac{2}{b^2}sin(xr_2)\\
-        -\frac{2}{a^2}(xr_0 - z_0)\cdot sin(xr_2)+\frac{2}{b^2}(xr_1 - z_1)\cdot cos(xr_2))\\
+        -\frac{2}{a^2}(xr_0 - z_0)\cdot sin(xr_2)+\frac{2}{b^2}(xr_1 - z_1)\cdot cos(xr_2)\\
     \end{bmatrix}^T
     \cdot
     \begin{bmatrix}
@@ -60,6 +60,7 @@ L_gL_fB(x) &= \frac{\partial}{\partial x}(L_fB(x)) \cdot g(x) \\
         0\\
         1
     \end{bmatrix}\\
+&= -\frac{2}{a^2}(xr_0 - z_0)\cdot sin(xr_2)+\frac{2}{b^2}(xr_1 - z_1)\cdot cos(xr_2)\\
 &\neq (\frac{2}{b^2}(xr_1 - z_1) \cdot cos(xr_2) - \frac{2}{a^2}(xr_0 - z_0) \cdot sin(xr_2)) \cdot \dot{xr_2} \tag{11}
 \end{aligned}
 $$

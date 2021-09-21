@@ -38,9 +38,7 @@ L^2_fB(x) &= \frac{\partial}{\partial x}(L_fB(x)) \cdot f(x) \\
         sin(xr_2)\\
         0
     \end{bmatrix}\\
-&= \frac{2}{a^2}cos^2(xr_2) + \frac{2}{b^2}sin^2(xr_2)\\
-&\neq   \frac{2}{a^2}(xr_0 - z_0 + cos(xr_2))\cdot cos(xr_2)
-    +\frac{2}{b^2}(xr_1 - z_1 + sin(xr_2))\cdot sin(xr_2)
+&= \frac{2}{a^2}cos^2(xr_2) + \frac{2}{b^2}sin^2(xr_2)
 \tag{10}
 \end{aligned}
 $$
@@ -60,7 +58,6 @@ L_gL_fB(x) &= \frac{\partial}{\partial x}(L_fB(x)) \cdot g(x) \\
         0\\
         1
     \end{bmatrix}\\
-&= -\frac{2}{a^2}(xr_0 - z_0)\cdot sin(xr_2)+\frac{2}{b^2}(xr_1 - z_1)\cdot cos(xr_2)\\
-&\neq (\frac{2}{b^2}(xr_1 - z_1) \cdot cos(xr_2) - \frac{2}{a^2}(xr_0 - z_0) \cdot sin(xr_2)) \cdot \dot{xr_2} \tag{11}
+&= -\frac{2}{a^2}(xr_0 - z_0)\cdot sin(xr_2)+\frac{2}{b^2}(xr_1 - z_1)\cdot cos(xr_2) \tag{11}
 \end{aligned}
 $$

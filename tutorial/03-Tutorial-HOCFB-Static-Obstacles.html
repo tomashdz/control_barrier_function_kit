@@ -3,30 +3,7 @@
 <head><meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>03-Tutorial-HOCFB-Static-Obstacles</title><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script><script>
-(function() {
-  function addWidgetsRenderer() {
-    var mimeElement = document.querySelector('script[type="application/vnd.jupyter.widget-view+json"]');
-    var scriptElement = document.createElement('script');
-    var widgetRendererSrc = 'https://unpkg.com/@jupyter-widgets/html-manager@*/dist/embed-amd.js';
-    var widgetState;
-
-    // Fallback for older version:
-    try {
-      widgetState = mimeElement && JSON.parse(mimeElement.innerHTML);
-
-      if (widgetState && (widgetState.version_major < 2 || !widgetState.version_major)) {
-        widgetRendererSrc = 'https://unpkg.com/jupyter-js-widgets@*/dist/embed.js';
-      }
-    } catch(e) {}
-
-    scriptElement.src = widgetRendererSrc;
-    document.body.appendChild(scriptElement);
-  }
-
-  document.addEventListener('DOMContentLoaded', addWidgetsRenderer);
-}());
-</script>
+<title>03-Tutorial-HOCFB-Static-Obstacles</title><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
 
 
 
@@ -13995,24 +13972,44 @@ a.anchor-link {
 <div class="jp-Cell-inputWrapper"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
 <h1 id="CBF-Tutorial---Part-3:-Higher-Order-Barrier-Functions">CBF Tutorial - Part 3: Higher-Order Barrier Functions<a class="anchor-link" href="#CBF-Tutorial---Part-3:-Higher-Order-Barrier-Functions">&#182;</a></h1><p>Authors: Bardh, Tom and Shakiba</p>
-<h2 id="In-this-notebook,-we-consider-higher-order-barrier-functions.">In this notebook, we consider higher-order barrier functions.<a class="anchor-link" href="#In-this-notebook,-we-consider-higher-order-barrier-functions.">&#182;</a></h2><p>We start with a <strong>unicycle</strong> model, which has the following dynamics:</p>
+<h2 id="Message">Message<a class="anchor-link" href="#Message">&#182;</a></h2><p>In this notebook, we consider a nonlinear control affine system. Due to the choice of barrier function and the nonlinearity of the system, we utlize higher-order barrier functions.</p>
+<p>The notebook contains,</p>
+<ol>
+<li>An implementation of a higher order CBFs (HOCBF) for start-to-goal control on a nonlinear system.</li>
+<li>The formulation of the HOCBF as a quadratic program.</li>
+<li>A representative example using a nonlinear unicycle model which avoids static obstacles.</li>
+</ol>
+<h2 id="Tutorial">Tutorial<a class="anchor-link" href="#Tutorial">&#182;</a></h2><p>The dynamics of a <strong><a href="http://faculty.salina.k-state.edu/tim/robotics_sg/Control/kinematics/unicycle.html">unicycle</a></strong> can be defined as a time invariant control affine system of the form:</p>
 $$
 \dot{x} = f(x) + g(x) \cdot u \\
-$$$$
-\begin{bmatrix} \dot{xr_0} \\ \dot{xr_1} \\ \dot{xr_2} \end{bmatrix} = \begin{bmatrix} cos(xr_2) \\ sin(xr_2) \\ 0 \end{bmatrix} + \begin{bmatrix} 0 \\ 0 \\ 1 \end{bmatrix} u \tag{1}\\
-$$<p>where the input to the system $u= \dot{xr_2} = \omega$ is the angular velocity.
-We can imagine the robot's states are 2D positon with direction, $\begin{bmatrix} xr_0 &amp; xr_1 &amp; xr_2 \end{bmatrix}^T = \begin{bmatrix} x &amp; y &amp; \theta \end{bmatrix}^T$.</p>
-<p>Given an initial position $x^{init}$, our goal is to control this system to a goal location $x^{goal}$.
+$$<p>Specifically:</p>
 $$
-x^{init} = \begin{bmatrix} xr^{init}_0 \\  xr^{init}_1 \end{bmatrix} \qquad x^{goal} = \begin{bmatrix} x^{goal}_0 \\  x^{goal}_1 \end{bmatrix} \tag{2}\\
+\begin{bmatrix}
+    \dot{xr_0}\\
+    \dot{xr_1}\\
+    \dot{xr_2}
+\end{bmatrix} =
+\begin{bmatrix}
+    cos(xr_2)\\
+    sin(xr_2)\\
+    0
+\end{bmatrix} +
+\begin{bmatrix}
+    0\\
+    0\\
+    1
+\end{bmatrix} u \tag{1}
+$$<p>where the input to the system $u= \dot{xr_2}$ is the angular velocity.
+The system state is the 2D positon and orientation, $\begin{bmatrix} xr_0 &amp; xr_1 &amp; xr_2 \end{bmatrix}^T = \begin{bmatrix} x &amp; y &amp; \theta \end{bmatrix}^T$.
+Given an initial position $x^{init}$, our goal is to control this system to a goal location $x^{goal}$.
+$$
+x^{init} = \begin{bmatrix} xr^{init}_0 \\  xr^{init}_1 \end{bmatrix} \qquad x^{goal} = \begin{bmatrix} x^{goal}_0 \\  x^{goal}_1 \end{bmatrix} \tag{2}
 $$
 However, the system should avoid certain areas in the workspace (more on this later).</p>
-<p>One way to solve this problem is to pose it as an optimization problem. Specifically, we would like to solve the following problem:
+<p>One way to solve this problem is to pose it as an optimization problem where we apply a safety constraint to an existing reference controller which prevents collision to obstacles. Specifically, we would like to solve the following problem:
 $$
-\begin{align}
-\min_{u} \quad &amp; ||u_{ref} - u|| \\
-\textrm{s.t.} \quad &amp; \text{CBF constraints to be added later} \tag{3}
-\end{align}
+\min_{u} \quad ||u_{ref} - u|| \\
+\textrm{s.t.} \quad \text{CBF constraints to be added later} \tag{3}
 $$
 So, we will try to minimize the distance between the decission variable $u$ and reference controller $u_{ref}$, while satisfying some constraints. For now, let us disregard the constraint and focus on designing a reference controller.</p>
 <h2 id="Reference-controller">Reference controller<a class="anchor-link" href="#Reference-controller">&#182;</a></h2><p>We will define a very simple reference controller as follows
@@ -14020,40 +14017,102 @@ $$
 u_{ref} = k \cdot (\arctan{(\frac{x^{goal}_0-xr_0}{x^{goal}_1-xr_1})} - xr_2) \tag{4}
 $$
 This is a two dimensional vector that takes the difference between the current system state (or location) and the goal location and multiply it with a gain factor $k$. This <strong>simple</strong> reference controller will take us from an initial location to the goal location. We can say it is a typical <a href="https://en.wikipedia.org/wiki/Proportional_control">proportional controller</a>. Next, we need to make sure that the system does not enter undesired states.</p>
-<h2 id="Control-Barrier-Function-(CBF)-as-Constraints">Control Barrier Function (CBF) as Constraints<a class="anchor-link" href="#Control-Barrier-Function-(CBF)-as-Constraints">&#182;</a></h2><p>We assume that the undesired regions in the workspace can be defined with one or more <a href="https://en.wikipedia.org/wiki/Ellipse">ellipses</a>. In two dimensions, the region inside an ellypsis can be using the standard form with the following inequality
+<h2 id="Control-Barrier-Function-(CBF)-as-Constraints">Control Barrier Function (CBF) as Constraints<a class="anchor-link" href="#Control-Barrier-Function-(CBF)-as-Constraints">&#182;</a></h2><p>We assume that the undesired regions in the workspace can be defined with one or more <a href="https://en.wikipedia.org/wiki/Ellipse">ellipses</a>. Note that we could also use <a href="https://mathworld.wolfram.com/Hyperellipse.html">hyperellipses</a> which may be suitable for closely approximating rectangles while maintaining continuity properties. 
+In two dimensions, the region inside an ellypsis can be defined with the following inequality
 $$
 \frac{z^2_0}{a^2} + \frac{z^2_1}{b^2}\leq 1 \tag{5}
 $$
 where $z_0,z_1$ define the origin and $a,b$ define the major, minor axes of the ellipse, respectively.</p>
-<p>In our case, we would like to check whether our system is in the undesired region and therefore we modify the afforementined requirement
+<p>In our case, we would like to check whether our system is in the undesired region and therefore the following would enable us to do so:
 $$
 B(x) = \frac{(x_0-z_0)^2}{a^2} + \frac{(x_1-z_1)^2}{b^2} - 1 \tag{6}
 $$</p>
-<p>Compared to tutorials 1 and 2, we consider a more general definition of CBFs <a href="https://arxiv.org/pdf/1903.11199.pdf">(Ames et al, 2019)</a>:</p>
+<p>Compared to tutorials 1 and 2, we consider a more general definition of CBFs since in this case our system is an affine control system (eq. (1)) whose dynamics are a function of both $f(x)$ and $g(x)$.
+(Please see <a href="https://arxiv.org/pdf/1903.04706.pdf">Wei et al, 2019</a> Definition 4: Control barrier function, Eq. (5). for an overview)
+<!--([Ames et al, 2019](https://arxiv.org/pdf/1903.11199.pdf)):--></p>
+<p>Specifcally, if assumptions on the continuity of B(x) are satisfied and there exists a function $\alpha$ such that:</p>
 $$
-L_fB(x) + L_gB(x)u + \alpha(B(x)) \ge 0
-$$<p>Where $L_fB(x) = \frac{\partial B}{\partial x}^Tf(x)$ and $L_gB(x) = \frac{\partial B}{\partial x}^Tg(x)$ are the first order Lie derivatives of the system. This works well for first order systems, where the control input appears in the first derivative of $B$.</p>
-<p>However, in our example, as we shall see, this function has a relative degree of 2 with respect to the system under consideration, since the first time that the control $u$ appears in the derivatives of B along the system dynamics is in its $2^{nd}$ derivative. In this case:</p>
+\sup_{u\in U}(L_fB(x) + L_gB(x)u + \alpha(B(x)) \ge 0 \tag{7})
+% L_fB(x) + L_gB(x)u + \alpha(B(x)) \ge 0 \tag{7}
+$$<p>is satisfied for all states $x$ in which the system can be in, then $B(x)$ is a valid control barrier function. In other words, if there exists an input which satisfies the constraint in eq. (7) over all possible system states, then $B(x)$ is a valid control barrier function.</p>
+<p>A <a href="https://arxiv.org/pdf/2105.14311.pdf">Lie derivative (see Def 1)</a>is defined as follows: Given a vector field $f$ over $x$, the lie derivative of a polynomial function $B(x)$ along $f$ or order $k\in N$ is</p>
 $$
-L^2_fB(x) + L_gL_fB(x)u + \alpha_2( \dot{B}(x) + \alpha_1 B(x) ) \ge 0
-$$<p>First,
+\mathcal{L}^k_fB(x) =
+\begin{cases}
+    B(x) &amp; k = 0 \\
+    \langle \frac{\partial}{\partial x}\mathcal{L}^{k-1}_fB(x),f(x) \rangle &amp; k&gt;0
+\end{cases}
+\tag{8}
+$$<p>Therefore, $L_fB(x) = \langle \frac{\partial}{\partial x} B(x), f(x)\rangle$ and $L_gB(x) = \langle \frac{\partial}{\partial x} B(x), g(x) \rangle$ are the first order <a href="https://en.wikipedia.org/wiki/Lie_derivative">Lie derivatives</a> of the system. $\langle \cdot,\cdot \rangle$ is a the inner product of vectors. This works well for first order systems, where the control input appears in the first derivative of $B$. However, in our example, this is not the case:</p>
 $$
-\dot{B}(x) = \frac{\partial{B}}{\partial{x}} \cdot \frac{\partial{x}}{\partial{t}} = \begin{bmatrix} (-2z_0 + 2xr_0)/a^2] \\ (-2z_1 + 2xr_1)/b^2] \\ 0 \end{bmatrix}^T \cdot \dot{x}
+L_gB(x) = 
+\begin{bmatrix}
+    \frac{2}{a^2}(xr_0 - z_0)\\
+    \frac{2}{b^2}(xr_1 - z_1)\\
+    0
+\end{bmatrix}^T \cdot
+\begin{bmatrix}
+0 \\
+0 \\
+1
+\end{bmatrix}
+= 0
+\tag{9}
+$$<p>Since the control input does not appear on $L_gB(x)$, we cannot find an input $u$ that satisfies the condition in eq. (7). In fact, as we will see, $B(x)$ has a relative degree of 2 with respect to the system under consideration, since the first time that the control $u$ appears in the derivatives of B along the system dynamics is in its $2^{nd}$ derivative.</p>
+<p>For higher order control barrier functions (Please see <a href="https://arxiv.org/pdf/1903.04706.pdf">Wei et al, 2019</a>, Definition 8 Eq. (14)), we rewrite eq. (7) to:</p>
+$$
+\sup_{u\in U}(L^2_fB(x) + L_gL_fB(x)u + O(\cdot) + \alpha_2( \dot{B}(x) + \alpha_1 B(x) ) \ge 0) \tag{10}
+$$<p>where $O(\cdot)$ denotes the remaining Lie derivatives along $f$ with degree less than or equal to 1. In this case</p>
+$$
+O(\cdot) = L_fB(x) = \frac{\partial{B}}{\partial{x}}^T \cdot f(x) =
+\begin{bmatrix}
+    \frac{2}{a^2}(xr_0 - z_0)\\
+    \frac{2}{b^2}(xr_1 - z_1)\\
+    0
+\end{bmatrix}^T
+\cdot
+\begin{bmatrix}
+    cos(xr_2)\\
+    sin(xr_2)\\
+    0
+\end{bmatrix}
+\tag{11}
+$$<p>In order to evaluate this condition, we have to compute $L^2_fB(x)$ and $L_gL_fB(x)$.</p>
+<p>According to the definiton of Lie derivatives:</p>
+$$
+L^2_fB(x) = \frac{\partial}{\partial x} (L_fB(x)) ^T \cdot f(x) \tag{12}
+$$$$
+L_gL_fB(x) = \frac{\partial}{\partial x} (L_fB(x)) ^T \cdot g(x) \tag{13}
+$$<!-- First we compute:
+$$
+\dot{B}(x) = \frac{\partial{B}}{\partial{x}} \cdot \frac{\partial{x}}{\partial{t}} =
+\begin{bmatrix}
+    \frac{2}{a^2}(xr_0 - z_0)\\
+    \frac{2}{b^2}(xr_1 - z_1)\\
+    0
+\end{bmatrix}^T
+\cdot \dot{x} \tag{9}
+$$
+
+(The expansion is similar to [01-DerivativeB.md](./01-DerivativeB.md) in tutorial 1.)
+ -->
+
+<p>Then, we calculate
+$$
+L^2_fB(x) = \frac{2}{a^2}cos^2(xr_2) + \frac{2}{b^2}sin^2(xr_2)
+\tag{14}
 $$</p>
-<p>Then, we caluclate
+<p>We note that this derivation can (and should) be done with a symbolic math engine such as sympy.</p>
+<p>After, we calculate
 $$
-L^2_fB(x) = ((-2z_0 + 2xr_0)/a^2 + 2cos(xr_2)/a^2)*cos(xr_2) + ((-2z_1 + 2xr_1)/b^2 + 2sin(xr_2)/b^2) \cdot sin(xr_2)
+L_gL_fB(x)u= (-\frac{2}{a^2}(xr_0 - z_0)\cdot sin(xr_2)+\frac{2}{b^2}(xr_1 - z_1)\cdot cos(xr_2))\cdot\dot{xr_2} \tag{15}
 $$
-<!-- L^2_fB(x) = (\alpha_1*(-2z_0 + 2xr_0)/a^2 + 2cos(xr_2)/a^2)*cos(xr_2) + (\alpha_1*(-2z_1 + 2xr_1)/b^2 + 2sin(xr_2)/b^2)*sin(xr_2) -->
-After, we calculate
-$$
-L_gL_fB(x) = ((-2z_1 + 2xr_1)*cos(xr_2)/b^2 - (-2z_0 + 2xr_0)*sin(xr_2)/a^2)*\dot{xr_2}
-$$</p>
-<p>Here, we notice that our control input $\dot{xr_2}$ appears in the expression and we can therefore continue in the next step of synthesizing a controller. For more details on higher order barrier functions, please see the paper by <a href="https://arxiv.org/pdf/1903.04706.pdf">Xiao and Belta</a>:</p>
+(The expansion is shown in <a href="./03-LieDerivatives.md">03-LieDerivatives.md</a>)</p>
+<p>Here, we notice that our control input $\dot{xr_2}$ appears in the expression and we can use this control input to satisfy eq. (8). Therefore, we continue in the next step of synthesizing a controller. For more details on higher order barrier functions, please see the paper by <a href="https://arxiv.org/pdf/1903.04706.pdf">Xiao and Belta</a>:</p>
 <h2 id="Posing-the-control-problem-as-a-quadratic-program">Posing the control problem as a quadratic program<a class="anchor-link" href="#Posing-the-control-problem-as-a-quadratic-program">&#182;</a></h2><p>We can now combine the cost function with the constraints to form an optimization problem.
 $$
 \begin{align}
-\min_{u} \quad &amp; ||u_{ref} - u||\\ \textrm{s.t.} \quad &amp; L_gL_fB(x)u  \ge -L^2_fB(x) - \alpha_2( \dot{B}(x) + \alpha_1 B(x) ) 
+\min_{u} \quad &amp; ||u_{ref} - u||\\ \textrm{s.t.} \quad &amp; L_gL_fB(x)u  \ge -L^2_fB(x) - O(\cdot) - \alpha_2( \dot{B}(x) + \alpha_1 B(x) ) \tag{12}
 \end{align}
 $$</p>
 <p>This problem can be posed as a <a href="https://en.wikipedia.org/wiki/Quadratic_programming">quadratic problem</a> of the form
@@ -14072,8 +14131,15 @@ q =  u_{ref0} \tag{15}
 $$$$
 G = L_gL_fB(x) \tag{16}
 $$$$
-h = -L^2_fB(x) - \alpha_2( \dot{B}(x) + \alpha_1 B(x) ) \tag{17}
-$$<p>Here, one of advantage of this methodology is that instance of controller is not needed, as we can see (15) referes only result of controller reference $u_{ref}$. In another word, the CBF can work as an observer in whole controll system.</p>
+h = -L^2_fB(x) - O(\cdot) - \alpha_2( \dot{B}(x) + \alpha_1 B(x) ) \tag{17}
+$$<!-- Here, one of advantage of this methodology is that instance of controller is not needed, as we can see (15) referes only result of controller reference $u_{ref}$. In another word, the CBF can work as an observer in whole controll system. -->
+
+<p>As we can see from eq. (15), this methodology can be utilized with existing controllers. Alternatively, it may be combined with Control Lyapunov Functions as we did in <a href="https://www.bhoxha.com/papers/LCSS2020.pdf">Yaghoubi et al</a>.</p>
+<h2 id="General-Remarks">General Remarks<a class="anchor-link" href="#General-Remarks">&#182;</a></h2><ul>
+<li>Selecting appropriate hyperparameters $\alpha_i$ is very important. Bad choices can cause the QP to become infeasible. As they become smaller, the CBF constraint becomes stricter. We can both desing the system with specific hyperparameter values or tune based on outcomes.</li>
+<li>Deadlock may be caused due to symmetry in cases where a robot is going exactly at the center of the obstacle. This can be avoided by adding perturbations to the control input.</li>
+<li>In practical applications, the CBF constraint may be relaxed with a slack variable to avoid issues with feasibility of the problem. In this case, however, you may loose the theoretical guarantess on safety.</li>
+</ul>
 <h2 id="Code-implementation">Code implementation<a class="anchor-link" href="#Code-implementation">&#182;</a></h2><p>First, we import the necessary packages for our example.</p>
 
 </div>
@@ -14091,6 +14157,7 @@ $$<p>Here, one of advantage of this methodology is that instance of controller i
 <span class="kn">from</span> <span class="nn">sympy</span> <span class="kn">import</span> <span class="n">symbols</span><span class="p">,</span> <span class="n">Matrix</span><span class="p">,</span> <span class="n">sin</span><span class="p">,</span> <span class="n">cos</span>
 <span class="kn">import</span> <span class="nn">matplotlib.animation</span> <span class="k">as</span> <span class="nn">animation</span>
 <span class="kn">from</span> <span class="nn">cbflib</span> <span class="kn">import</span> <span class="n">cbf</span><span class="p">,</span> <span class="n">cbf_utils</span><span class="p">,</span> <span class="n">sys_and_ctrl</span>
+<span class="kn">from</span> <span class="nn">sympy</span> <span class="kn">import</span> <span class="n">symbols</span><span class="p">,</span> <span class="n">Matrix</span><span class="p">,</span> <span class="n">sin</span><span class="p">,</span> <span class="n">cos</span><span class="p">,</span> <span class="n">lambdify</span><span class="p">,</span> <span class="n">exp</span><span class="p">,</span> <span class="n">sqrt</span><span class="p">,</span> <span class="n">log</span><span class="p">,</span> <span class="n">diff</span><span class="p">,</span> <span class="n">Mul</span><span class="p">,</span> <span class="n">srepr</span><span class="p">,</span> <span class="n">Symbol</span>
 </pre></div>
 
      </div>
@@ -14128,7 +14195,7 @@ $$<p>Here, one of advantage of this methodology is that instance of controller i
 
 <span class="c1"># Initialize CBF</span>
 <span class="n">myCBF</span> <span class="o">=</span> <span class="n">cbf</span><span class="o">.</span><span class="n">CBF</span><span class="p">(</span><span class="n">B</span><span class="o">=</span><span class="n">B</span><span class="p">,</span> <span class="n">f</span><span class="o">=</span><span class="n">f</span><span class="p">,</span> <span class="n">g</span><span class="o">=</span><span class="n">g</span><span class="p">,</span> <span class="n">symbs</span> <span class="o">=</span> <span class="n">symbs</span><span class="p">,</span> <span class="n">states</span><span class="o">=</span><span class="p">(</span><span class="n">xr0</span><span class="p">,</span> <span class="n">xr1</span><span class="p">,</span> <span class="n">xr2</span><span class="p">),</span>
-                <span class="n">bad_sets</span><span class="o">=</span><span class="n">bad_sets</span><span class="p">,</span> <span class="n">states_dot</span><span class="o">=</span><span class="n">states_dot</span><span class="p">,</span> <span class="n">degree</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+                <span class="n">bad_sets</span><span class="o">=</span><span class="n">bad_sets</span><span class="p">,</span> <span class="n">states_dot</span><span class="o">=</span><span class="n">states_dot</span><span class="p">,</span> <span class="n">degree</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span><span class="n">alpha</span> <span class="o">=</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">])</span>
 
 <span class="c1">#? Simulation settings</span>
 <span class="n">T_max</span> <span class="o">=</span> <span class="mi">10</span>
@@ -14233,7 +14300,7 @@ x_0	 x_1
 <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
 <span class="n">ani</span> <span class="o">=</span> <span class="n">animation</span><span class="o">.</span><span class="n">FuncAnimation</span><span class="p">(</span>
-    <span class="n">fig</span><span class="p">,</span> <span class="n">animate</span><span class="p">,</span> <span class="n">init_func</span><span class="o">=</span><span class="n">init</span><span class="p">,</span> <span class="n">interval</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">frames</span><span class="o">=</span><span class="n">n_samples</span><span class="p">,</span> <span class="n">repeat</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">blit</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">fig</span><span class="p">,</span> <span class="n">animate</span><span class="p">,</span> <span class="n">interval</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span> <span class="n">frames</span><span class="o">=</span><span class="n">n_samples</span><span class="p">,</span> <span class="n">repeat</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">blit</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
 <span class="kn">from</span> <span class="nn">IPython.display</span> <span class="kn">import</span> <span class="n">HTML</span>
 <span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">rcParams</span>
@@ -14263,12 +14330,12 @@ x_0	 x_1
 
 
 
-<div id="46409b43-e7c4-42f2-8267-eedc363bc192" class="jupyter-widgets jp-OutputArea-output ">
+<div id="99e82931-6c76-4d0d-a889-6a25b7bec7fd" class="jupyter-widgets jp-OutputArea-output ">
 <script type="text/javascript">
-var element = document.getElementById('46409b43-e7c4-42f2-8267-eedc363bc192');
+var element = document.getElementById('99e82931-6c76-4d0d-a889-6a25b7bec7fd');
 </script>
 <script type="application/vnd.jupyter.widget-view+json">
-{"version_major": 2, "version_minor": 0, "model_id": "35170bc37d37482cb349c4ef8c1b4cb0"}
+{"version_major": 2, "version_minor": 0, "model_id": "839047ecfb374b949047fdc63f7721da"}
 </script>
 </div>
 
@@ -14986,7 +15053,22 @@ AAAAAAAAAC1pbHN0AAAAJal0b28AAAAdZGF0YQAAAAEAAAAATGF2ZjU4LjI5LjEwMA==
 </div>
 <div class="jp-Cell-inputWrapper"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+
+</div>
+</div>
+<div class="jp-Cell-inputWrapper"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
 <p>To run the code directly in python see <a href="./03-Tutorial-HOCFB-Static-Obstacles.py">03-Tutorial-HOCFB-Static-Obstacles.py</a></p>
+
+</div>
+</div>
+<div class="jp-Cell-inputWrapper"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+
+</div>
+</div>
+<div class="jp-Cell-inputWrapper"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
 
 </div>
 </div>
@@ -14996,10 +15078,6 @@ AAAAAAAAAC1pbHN0AAAAJal0b28AAAAdZGF0YQAAAAEAAAAATGF2ZjU4LjI5LjEwMA==
 
 
 
-
-<script type="application/vnd.jupyter.widget-state+json">
-{"state": {"70678c3c14b14fbcb3c1713c0bdc0da2": {"model_name": "LayoutModel", "model_module": "@jupyter-widgets/base", "model_module_version": "1.2.0", "state": {"_model_module": "@jupyter-widgets/base", "_model_module_version": "1.2.0", "_model_name": "LayoutModel", "_view_count": null, "_view_module": "@jupyter-widgets/base", "_view_module_version": "1.2.0", "_view_name": "LayoutView", "align_content": null, "align_items": null, "align_self": null, "border": null, "bottom": null, "display": null, "flex": null, "flex_flow": null, "grid_area": null, "grid_auto_columns": null, "grid_auto_flow": null, "grid_auto_rows": null, "grid_column": null, "grid_gap": null, "grid_row": null, "grid_template_areas": null, "grid_template_columns": null, "grid_template_rows": null, "height": null, "justify_content": null, "justify_items": null, "left": null, "margin": null, "max_height": null, "max_width": null, "min_height": null, "min_width": null, "object_fit": null, "object_position": null, "order": null, "overflow": null, "overflow_x": null, "overflow_y": null, "padding": null, "right": null, "top": null, "visibility": null, "width": null}}, "35170bc37d37482cb349c4ef8c1b4cb0": {"model_name": "MPLCanvasModel", "model_module": "jupyter-matplotlib", "model_module_version": "^0.9.0", "state": {"_cursor": "pointer", "_dom_classes": [], "_figure_label": "Figure", "_height": 0, "_image_mode": "full", "_message": "", "_model_module": "jupyter-matplotlib", "_model_module_version": "^0.9.0", "_model_name": "MPLCanvasModel", "_rubberband_height": 0, "_rubberband_width": 0, "_rubberband_x": 0, "_rubberband_y": 0, "_view_count": null, "_view_module": "jupyter-matplotlib", "_view_module_version": "^0.9.0", "_view_name": "MPLCanvasView", "_width": 0, "capture_scroll": false, "footer_visible": true, "header_visible": true, "layout": "IPY_MODEL_70678c3c14b14fbcb3c1713c0bdc0da2", "resizable": true, "toolbar": "IPY_MODEL_ac57004274fa46b691f08a5577f0979d", "toolbar_position": "left", "toolbar_visible": true}}, "e443a42e946c4a9ca00ff9f187591357": {"model_name": "LayoutModel", "model_module": "@jupyter-widgets/base", "model_module_version": "1.2.0", "state": {"_model_module": "@jupyter-widgets/base", "_model_module_version": "1.2.0", "_model_name": "LayoutModel", "_view_count": null, "_view_module": "@jupyter-widgets/base", "_view_module_version": "1.2.0", "_view_name": "LayoutView", "align_content": null, "align_items": null, "align_self": null, "border": null, "bottom": null, "display": null, "flex": null, "flex_flow": null, "grid_area": null, "grid_auto_columns": null, "grid_auto_flow": null, "grid_auto_rows": null, "grid_column": null, "grid_gap": null, "grid_row": null, "grid_template_areas": null, "grid_template_columns": null, "grid_template_rows": null, "height": null, "justify_content": null, "justify_items": null, "left": null, "margin": null, "max_height": null, "max_width": null, "min_height": null, "min_width": null, "object_fit": null, "object_position": null, "order": null, "overflow": null, "overflow_x": null, "overflow_y": null, "padding": null, "right": null, "top": null, "visibility": null, "width": null}}, "ac57004274fa46b691f08a5577f0979d": {"model_name": "ToolbarModel", "model_module": "jupyter-matplotlib", "model_module_version": "^0.9.0", "state": {"_current_action": "", "_dom_classes": [], "_model_module": "jupyter-matplotlib", "_model_module_version": "^0.9.0", "_model_name": "ToolbarModel", "_view_count": null, "_view_module": "jupyter-matplotlib", "_view_module_version": "^0.9.0", "_view_name": "ToolbarView", "button_style": "", "collapsed": true, "layout": "IPY_MODEL_e443a42e946c4a9ca00ff9f187591357", "orientation": "vertical", "toolitems": [["Home", "Reset original view", "home", "home"], ["Back", "Back to previous view", "arrow-left", "back"], ["Forward", "Forward to next view", "arrow-right", "forward"], ["Pan", "Left button pans, Right button zooms\nx/y fixes axis, CTRL fixes aspect", "arrows", "pan"], ["Zoom", "Zoom to rectangle\nx/y fixes axis, CTRL fixes aspect", "square-o", "zoom"], ["Download", "Download plot", "floppy-o", "save_figure"]]}}}, "version_major": 2, "version_minor": 0}
-</script>
 
 
 </html>

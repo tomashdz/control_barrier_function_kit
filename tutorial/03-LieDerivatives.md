@@ -39,7 +39,7 @@ L^2_fB(x) &= \frac{\partial}{\partial x}(L_fB(x))^T \cdot f(x) \\
         0
     \end{bmatrix}\\
 &= \frac{2}{a^2}cos^2(xr_2) + \frac{2}{b^2}sin^2(xr_2)
-\tag{10}
+\tag{14}
 \end{aligned}
 $$
 
@@ -57,6 +57,6 @@ L_gL_fB(x) &= \frac{\partial}{\partial x}(L_fB(x))^T \cdot g(x) \\
         0\\
         1
     \end{bmatrix}\\
-&= -\frac{2}{a^2}(xr_0 - z_0)\cdot sin(xr_2)+\frac{2}{b^2}(xr_1 - z_1)\cdot cos(xr_2) \tag{11}
+&= -\frac{2}{a^2}(xr_0 - z_0)\cdot sin(xr_2)+\frac{2}{b^2}(xr_1 - z_1)\cdot cos(xr_2) \tag{15}
 \end{aligned}
 $$

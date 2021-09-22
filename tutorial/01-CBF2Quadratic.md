@@ -5,7 +5,7 @@ $$
 \begin{aligned}
 \min_{u} \quad & ||u_{ref} - u||\\
 \textrm{s.t.} \quad & \begin{bmatrix} \frac{2}{a^2}(x_0 - z_0) \\ \frac{2}{b^2}(x_1 - z_1)\end{bmatrix} \dot{x} \ge -(\frac{(x_0-z_0)^2}{a^2} + \frac{(x_1-z_1)^2}{b^2} - 1) \\
-... \tag{12}
+... \tag{5}
 \end{aligned}
 $$
 
@@ -43,7 +43,7 @@ $$
 While compairing above with a quadratic problem of the form,
 $$
 \begin{aligned}
-\min \quad & \frac{1}{2}\mathbf{x}^T P\mathbf{x} + q^T\mathbf{x} \\　\textrm{s.t.} \quad & G\mathbf{x} \le h \\　\quad & A\mathbf{x} = b \tag{13}
+\min \quad & \frac{1}{2}\mathbf{x}^T P\mathbf{x} + q^T\mathbf{x} \\　\textrm{s.t.} \quad & G\mathbf{x} \le h \\　\quad & A\mathbf{x} = b \tag{6}
 \end{aligned}
 $$
 We can see,
@@ -58,7 +58,7 @@ $$
 P = I_2 =   \begin{bmatrix}
                 1 & 0\\
                 0 & 1
-            \end{bmatrix} \tag{14}
+            \end{bmatrix} \tag{7}
 \end{aligned}
 $$
 $$
@@ -66,7 +66,7 @@ $$
 q = \begin{bmatrix}
         -u_{ref0}\\
         -u_{ref1}
-    \end{bmatrix} \tag{15}
+    \end{bmatrix} \tag{8}
 \end{aligned}
 $$
 $$
@@ -74,11 +74,11 @@ $$
 G = \begin{bmatrix}
         \frac{-2}{a^2}(x_0 - z_0)\\
         \frac{-2}{b^2}(x_1 - z_1)
-    \end{bmatrix}^T \tag{16}
+    \end{bmatrix}^T \tag{9}
 \end{aligned}
 $$
 $$
 \begin{aligned}
-h = (\frac{(x_0-z_0)^2}{a^2} + \frac{(x_1-z_1)^2}{b^2} - 1) \tag{17}
+h = (\frac{(x_0-z_0)^2}{a^2} + \frac{(x_1-z_1)^2}{b^2} - 1) \tag{10}
 \end{aligned}
 $$

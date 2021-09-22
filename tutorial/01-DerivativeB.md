@@ -3,7 +3,7 @@
 Since
 $$
 \begin{aligned}
-B(x) = \frac{(x_0-z_0)^2}{a^2} + \frac{(x_1-z_1)^2}{b^2} - 1 \tag{6}
+B(x) = \frac{(x_0-z_0)^2}{a^2} + \frac{(x_1-z_1)^2}{b^2} - 1 \tag{1}
 \end{aligned}
 $$
 
@@ -23,6 +23,6 @@ $$
 = \begin{bmatrix}
         \frac{2}{a^2}(x_0 - z_0)\\
         \frac{2}{b^2}(x_1 - z_1)
-   \end{bmatrix}^T 　\tag{10}
+   \end{bmatrix}^T 　\tag{4}
 \end{aligned}
 $$

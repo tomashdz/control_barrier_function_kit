@@ -3,12 +3,12 @@
 Since
 $$
 \begin{aligned}
-B(xr,xo) = \frac{(xr_0-xo_0)^2}{a^2} + \frac{(xr_1-xo_1)^2}{b^2} - 1 \tag{4}
+B(xr,xo) = \frac{(xr_0-xo_0)^2}{a^2} + \frac{(xr_1-xo_1)^2}{b^2} - 1 \tag{1}
 \end{aligned}
 $$
 $$
 \begin{aligned}
-\dot{B}(xr,xo) = \frac{\partial B}{\partial xr} \cdot \dot{xr} + \frac{\partial B}{\partial xo} \cdot \dot{xo} \tag{6}
+\dot{B}(xr,xo) = \frac{\partial B}{\partial xr} \cdot \dot{xr} + \frac{\partial B}{\partial xo} \cdot \dot{xo} \tag{2}
 \end{aligned}
 $$
 
@@ -64,6 +64,6 @@ $$
                 \frac{2}{a^2} (xo_0 - xr_0) \\
                 \frac{2}{b^2} (xo_1 - xr_1)
         \end{bmatrix}^T
-        \cdot \dot{xo} \tag{7}
+        \cdot \dot{xo} \tag{3}
 \end{aligned}
 $$
